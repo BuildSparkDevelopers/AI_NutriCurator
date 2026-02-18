@@ -10,4 +10,10 @@ class InMemoryStore:
     health_profiles: Dict[int, dict] = field(default_factory=dict)
     next_user_id: int = 1
 
+    # products
+    products: Dict[str, dict] = field(default_factory=dict)
+
+    
+    next_user_id: int = 1
+
 STORE = InMemoryStore()
