@@ -1,0 +1,10 @@
+ # 역할: FastAPI 앱 생성 + 라우터 연결(서버 시작점)
+
+from fastapi import FastAPI
+from api.routes.auth import router as auth_router
+from api.routes.users import router as users_router
+
+app = FastAPI(title="AI-NutriCurator API")
+
+app.include_router(auth_router)
+app.include_router(users_router)
