@@ -11,6 +11,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from infra.db.session import get_db
 from infra.db.repositories.user_repo import UserRepository
 from infra.db.repositories.health_repo import HealthProfileRepository
+from infra.db.repositories.product_repo import ProductRepository
+from domain.services.product_service import ProductService
 
 from domain.services.auth_service import AuthService
 from domain.services.user_service import UserService
@@ -56,3 +58,11 @@ def get_current_user_id(
         raise HTTPException(status_code=401, detail="INVALID_TOKEN")
 
     return int(sub)
+
+def get_product_repo(db=Depends(get_db)) -> ProductRepository:
+    # # 역할: ProductRepository 주입
+    return ProductRepository(db)
+
+def get_product_service(repo: ProductRepository = Depends(get_product_repo)) -> ProductService:
+    # # 역할: ProductService 주입
+    return ProductService(repo)
