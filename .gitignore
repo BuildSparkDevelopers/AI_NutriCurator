@@ -34,7 +34,7 @@ coverage.xml
 .ipynb_checkpoints/
 
 # Logs
-*.log
+*.log 
 
 # =========================
 # Environment / secrets
