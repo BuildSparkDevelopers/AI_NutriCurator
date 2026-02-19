@@ -13,6 +13,8 @@ from infra.db.repositories.user_repo import UserRepository
 from infra.db.repositories.health_repo import HealthProfileRepository
 from infra.db.repositories.product_repo import ProductRepository
 from domain.services.product_service import ProductService
+from infra.db.repositories.cart_repo import CartRepository
+from domain.services.cart_service import CartService 
 
 from domain.services.auth_service import AuthService
 from domain.services.user_service import UserService
@@ -59,6 +61,7 @@ def get_current_user_id(
 
     return int(sub)
 
+
 def get_product_repo(db=Depends(get_db)) -> ProductRepository:
     # # 역할: ProductRepository 주입
     return ProductRepository(db)
@@ -66,3 +69,10 @@ def get_product_repo(db=Depends(get_db)) -> ProductRepository:
 def get_product_service(repo: ProductRepository = Depends(get_product_repo)) -> ProductService:
     # # 역할: ProductService 주입
     return ProductService(repo)
+
+# Cart 관련 의존성 주입
+def get_cart_repo(db=Depends(get_db)) -> CartRepository:
+    return CartRepository(db)
+
+def get_cart_service(repo: CartRepository = Depends(get_cart_repo)) -> CartService:
+    return CartService(repo)
