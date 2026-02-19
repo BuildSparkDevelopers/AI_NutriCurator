@@ -21,4 +21,6 @@ class InMemoryStore:
     cart_items: Dict[str, List[dict]] = field(default_factory=dict)
     next_cart_item_id: int = 1
 
+
 STORE = InMemoryStore()   
+
