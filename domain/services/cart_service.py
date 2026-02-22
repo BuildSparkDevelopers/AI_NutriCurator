@@ -26,7 +26,7 @@ class CartService:
 
         return self.cart_repo.create_item(user_id, product_id, analysis_snapshot)
 
-    def list_items(self, *, user_id: str) -> List[dict]:  
+    def list_items(self, *, user_id: str) -> List[dict]:
         # 역할: 장바구니 목록 조회
         return self.cart_repo.list_items(user_id)
 

@@ -1,15 +1,8 @@
-from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from app.settings import settings
+# 역할: FastAPI Depends로 "DB 세션처럼" STORE 주입
+# 나중에 PostgreSQL 붙이면 여기만 SQLAlchemy session으로 교체
 
-engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True, echo=False)
+from typing import Generator
+from infra.db.store import STORE, InMemoryStore
 
-SessionLocal = async_sessionmaker(
-    bind=engine,
-    expire_on_commit=False,
-    class_=AsyncSession,
-)
-
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with SessionLocal() as session:
-        yield session
+def get_db() -> Generator[InMemoryStore, None, None]:
+    yield STORE

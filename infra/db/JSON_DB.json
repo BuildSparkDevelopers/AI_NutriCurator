@@ -1,0 +1,529 @@
+user_health_profile = {
+  "0": {
+    "user_id": "0",
+    "diabetes_flag": 1,
+    "hypertension_flag": 0,
+    "kidneydisease_flag": 0,
+    "allergy_flag": 1,
+    "diabetes_detail": "TYPE_2",
+    "hypertension_detail": null,
+    "kidney_detail": null,
+    "allergy_list": [
+      "우유",
+      "땅콩"
+    ],
+    "weight": 70.0
+  },
+  "1": {
+    "user_id": "1",
+    "diabetes_flag": 0,
+    "hypertension_flag": 1,
+    "kidneydisease_flag": 0,
+    "allergy_flag": 1,
+    "diabetes_detail": null,
+    "hypertension_detail": "STAGE_1",
+    "kidney_detail": null,
+    "allergy_list": [
+      "새우"
+    ],
+    "weight": 70.0
+  },
+  "2": {
+    "user_id": "2",
+    "diabetes_flag": 0,
+    "hypertension_flag": 0,
+    "kidneydisease_flag": 1,
+    "allergy_flag": 0,
+    "diabetes_detail": null,
+    "hypertension_detail": null,
+    "kidney_detail": "CKD_3_4",
+    "allergy_list": [],
+    "weight": 70.0
+  },
+  "3": {
+    "user_id": "3",
+    "diabetes_flag": 0,
+    "hypertension_flag": 0,
+    "kidneydisease_flag": 1,
+    "allergy_flag": 1,
+    "diabetes_detail": null,
+    "hypertension_detail": null,
+    "kidney_detail": "CKD_5_DIALYSIS",
+    "allergy_list": [
+      "밀"
+    ],
+    "weight": 70.0
+  },
+  "4": {
+    "user_id": "4",
+    "diabetes_flag": 1,
+    "hypertension_flag": 1,
+    "kidneydisease_flag": 0,
+    "allergy_flag": 0,
+    "diabetes_detail": "TYPE_2",
+    "hypertension_detail": "STAGE_1",
+    "kidney_detail": null,
+    "allergy_list": [],
+    "weight": 70.0
+  },
+  "5": {
+    "user_id": "5",
+    "diabetes_flag": 0,
+    "hypertension_flag": 0,
+    "kidneydisease_flag": 0,
+    "allergy_flag": 1,
+    "diabetes_detail": null,
+    "hypertension_detail": null,
+    "kidney_detail": null,
+    "allergy_list": [
+      "우유",
+      "계란",
+      "견과류"
+    ],
+    "weight": 70.0
+  },
+  "6": {
+    "user_id": "6",
+    "diabetes_flag": 1,
+    "hypertension_flag": 0,
+    "kidneydisease_flag": 1,
+    "allergy_flag": 1,
+    "diabetes_detail": "TYPE_2",
+    "hypertension_detail": null,
+    "kidney_detail": "CKD_3_4",
+    "allergy_list": [
+      "대두"
+    ],
+    "weight": 70.0
+  },
+  "7": {
+    "user_id": "7",
+    "diabetes_flag": 0,
+    "hypertension_flag": 1,
+    "kidneydisease_flag": 0,
+    "allergy_flag": 1,
+    "diabetes_detail": null,
+    "hypertension_detail": "STAGE_1",
+    "kidney_detail": null,
+    "allergy_list": [
+      "고등어",
+      "조개"
+    ],
+    "weight": 70.0
+  },
+  "8": {
+    "user_id": "user_8",
+    "diabetes_flag": 1,
+    "hypertension_flag": 1,
+    "kidneydisease_flag": 1,
+    "allergy_flag": 1,
+    "diabetes_detail": "TYPE_2",
+    "hypertension_detail": "STAGE_1",
+    "kidney_detail": "CKD_3_4",
+    "allergy_list": [
+      "땅콩",
+      "밀"
+    ],
+    "weight": 70.0
+  },
+  "9": {
+    "user_id": "9",
+    "diabetes_flag": 0,
+    "hypertension_flag": 1,
+    "kidneydisease_flag": 1,
+    "allergy_flag": 0,
+    "diabetes_detail": null,
+    "hypertension_detail": "STAGE_1",
+    "kidney_detail": "CKD_5_DIALYSIS",
+    "allergy_list": [],
+    "weight": 70.0
+  }
+}
+
+products = {
+  "0": {
+    "product_id": "201905000000",
+    "name": "설화눈꽃팝김부각스낵",
+    "brand": "설화",
+    "category": "과자",
+    "ingredients": ["찹쌀", "김", "참깨", "옥수수기름", "양파", "무", "대파", "천일염", "마늘", "새우", "멸치", "다시마", "건표고버섯", "둥굴레", "감초", "정제수"],
+    "allergy": "없음",
+    "trace": "null",
+    "calories": 150,
+    "sodium": 180,
+    "carbohydrate": 20,
+    "sugar": 1,
+    "fat": 7,
+    "trans_fat": 0,
+    "saturated_fat": 1.2,
+    "cholesterol": 5,
+    "protein": 2,
+    "phosphorus": 45,
+    "calcium": 30,
+    "potassium": 120,
+    "inferred_types": ["low_sugar"]
+  },
+  "1": {
+    "product_id": "201804000001",
+    "name": "설화눈꽃팝김부각스낵 아몬드맛",
+    "brand": "설화",
+    "category": "과자",
+    "ingredients": ["찹쌀", "김", "참깨", "아몬드", "양파", "무", "천일염", "새우", "멸치", "다시마", "정제수"],
+    "allergy": "아몬드",
+    "trace": "",
+    "calories": 170,
+    "sodium": 160,
+    "carbohydrate": 18,
+    "sugar": 1,
+    "fat": 10,
+    "trans_fat": 0,
+    "saturated_fat": 1.0,
+    "cholesterol": 3,
+    "protein": 4,
+    "phosphorus": 80,
+    "calcium": 50,
+    "potassium": 200,
+    "inferred_types": ["low_sugar"]
+  },
+  "2": {
+    "product_id": "201804000002",
+    "name": "고들빼기김치",
+    "brand": "남도미가",
+    "category": "김치류",
+    "ingredients": ["고들빼기", "멸치액", "염장새우", "양파", "혼합간장", "고춧가루", "마늘", "참깨", "물엿", "배즙", "당근"],
+    "allergy": "새우,대두,밀",
+    "trace": "밀, 땅콩, 복숭아, 토마토, 호두, 아황산류 혼입 가능",
+    "calories": 45,
+    "sodium": 850,
+    "carbohydrate": 8,
+    "sugar": 4,
+    "fat": 0.5,
+    "trans_fat": 0,
+    "saturated_fat": 0.1,
+    "cholesterol": 2,
+    "protein": 2,
+    "phosphorus": 35,
+    "calcium": 40,
+    "potassium": 320,
+    "inferred_types": ["low_fat", "low_sugar", "high_sodium"]
+  },
+  "3": {
+    "product_id": "199504000000",
+    "name": "해태 허니버터칩",
+    "brand": "해태",
+    "category": "과자",
+    "ingredients": ["감자", "혼합식용유", "허니버터맛시즈닝", "탈지분유(우유)", "버터혼합분말(대두)", "아카시아꿀", "고메버터(밀)"],
+    "allergy": "알수없음",
+    "trace": "null",
+    "calories": 345,
+    "sodium": 350,
+    "carbohydrate": 30,
+    "sugar": 7,
+    "fat": 23,
+    "trans_fat": 0.1,
+    "saturated_fat": 8,
+    "cholesterol": 10,
+    "protein": 3,
+    "phosphorus": 70,
+    "calcium": 25,
+    "potassium": 450,
+    "inferred_types": ["high_fat"]
+  },
+  "4": {
+    "product_id": "201405000000",
+    "name": "헬로버블 라이스퍼프 양파맛",
+    "brand": "헬로버블",
+    "category": "유아간식",
+    "ingredients": ["현미", "어니언시즈닝", "정백당", "리치버터분말", "양파분", "합성향료", "백미", "옥수수과립"],
+    "allergy": "알수없음",
+    "trace": "돼지고기, 땅콩, 복숭아, 아황산류, 호두 혼입 가능",
+    "calories": 120,
+    "sodium": 110,
+    "carbohydrate": 22,
+    "sugar": 3,
+    "fat": 2.5,
+    "trans_fat": 0,
+    "saturated_fat": 0.5,
+    "cholesterol": 0,
+    "protein": 2,
+    "phosphorus": 55,
+    "calcium": 15,
+    "potassium": 90,
+    "inferred_types": ["low_fat", "low_sugar", "low_sodium"]
+  },
+  "5": {
+    "product_id": "201105000000",
+    "name": "두마리목장 콜비치즈",
+    "brand": "두마리목장",
+    "category": "치즈/유제품",
+    "ingredients": ["원유(국산)99.9%", "우유응고효소", "유산균", "식염", "안나토색소"],
+    "allergy": "우유함유",
+    "trace": "null",
+    "calories": 115,
+    "sodium": 190,
+    "carbohydrate": 1,
+    "sugar": 0.5,
+    "fat": 9,
+    "trans_fat": 0.3,
+    "saturated_fat": 6,
+    "cholesterol": 30,
+    "protein": 7,
+    "phosphorus": 140,
+    "calcium": 210,
+    "potassium": 25,
+    "inferred_types": ["low_sugar"]
+  },
+  "6": {
+    "product_id": "201105000001",
+    "name": "양반 바삭 튀김가루",
+    "brand": "양반",
+    "category": "가루/조미료",
+    "ingredients": ["밀가루", "변성전분", "베이킹파우더", "정제소금", "양파분말", "옥수수가루"],
+    "allergy": "밀",
+    "trace": "null",
+    "calories": 350,
+    "sodium": 650,
+    "carbohydrate": 78,
+    "sugar": 2,
+    "fat": 1.2,
+    "trans_fat": 0,
+    "saturated_fat": 0.3,
+    "cholesterol": 0,
+    "protein": 7,
+    "phosphorus": 95,
+    "calcium": 20,
+    "potassium": 110,
+    "inferred_types": ["low_fat", "low_sugar", "high_carb", "high_sodium"]
+  },
+  "7": {
+    "product_id": "201104000001",
+    "name": "돈목살훈제바베큐스테이크",
+    "brand": "옐로우팜",
+    "category": "가공육",
+    "ingredients": ["돼지고기 96.68%", "스모크시즈닝", "분리대두단백", "토마토케찹", "아질산나트륨"],
+    "allergy": "돼지고기,밀,우유,대두,쇠고기,토마토 함유",
+    "trace": "null",
+    "calories": 280,
+    "sodium": 720,
+    "carbohydrate": 5,
+    "sugar": 2,
+    "fat": 20,
+    "trans_fat": 0,
+    "saturated_fat": 7,
+    "cholesterol": 65,
+    "protein": 19,
+    "phosphorus": 180,
+    "calcium": 15,
+    "potassium": 310,
+    "inferred_types": ["low_sugar", "high_protein", "high_fat", "high_sodium"]
+  },
+  "8": {
+    "product_id": "201104000002",
+    "name": "태양초 고추장 골드",
+    "brand": "해찬들",
+    "category": "장류",
+    "ingredients": ["고춧가루", "물엿", "소맥분(밀)", "혼합양념", "밀쌀", "정제소금", "정백당"],
+    "allergy": "알수없음",
+    "trace": "null",
+    "calories": 210,
+    "sodium": 2400,
+    "carbohydrate": 48,
+    "sugar": 25,
+    "fat": 1,
+    "trans_fat": 0,
+    "saturated_fat": 0.2,
+    "cholesterol": 0,
+    "protein": 4,
+    "phosphorus": 90,
+    "calcium": 35,
+    "potassium": 450,
+    "inferred_types": ["low_fat", "high_sugar", "high_sodium"]
+  },
+  "9": {
+    "product_id": "201104000003",
+    "name": "환타지 믹스너트",
+    "brand": "환타지",
+    "category": "견과류",
+    "ingredients": ["커피땅콩", "화이트볼", "찹쌀땅콩", "튀김땅콩", "로스티드피너츠", "바나나칩", "볶음아몬드", "꿀땅콩"],
+    "allergy": "알수없음",
+    "trace": "null",
+    "calories": 520,
+    "sodium": 280,
+    "carbohydrate": 45,
+    "sugar": 18,
+    "fat": 34,
+    "trans_fat": 0,
+    "saturated_fat": 9,
+    "cholesterol": 0,
+    "protein": 14,
+    "phosphorus": 310,
+    "calcium": 75,
+    "potassium": 580,
+    "inferred_types": ["high_sugar", "high_protein", "high_fat", "high_potassium"]
+  }
+}
+
+
+
+
+
+# 테스트용 유저 파이널프로필 (당뇨 + 신장병 환자 가정)
+final_profiles = {
+    "0": { # 당뇨 + 우유/땅콩 알러지
+        "restricted_ingredients": ["우유", "땅콩"],
+        "sugar": 5.0
+    },
+    "1": { # 고혈압 + 새우 알러지
+        "restricted_ingredients": ["새우"],
+        "sodium": 2300.0,
+        "potassium": 3500.0,
+        "fat_ratio": 0.25
+    },
+    "2": { # 투석 전 신장질환 (70kg 기준)
+        "restricted_ingredients": [],
+        "protein": 42.0,  # 0.6 * 70
+        "sodium": 2300.0,
+        "phosphorus": 1000.0,
+        "calcium": 1000.0,
+        "calories": 2450.0    # 35 * 70
+    },
+    "3": { # 투석 중 신장질환 + 밀 알러지
+        "restricted_ingredients": ["밀"],
+        "protein": 84.0,  # 1.2 * 70
+        "sodium": 2300.0,
+        "potassium": 2000.0,
+        "phosphorus": 1000.0,
+        "calories": 2450.0
+    },
+    "4": { # 당뇨 + 고혈압 복합 (가장 흔한 케이스)
+        "restricted_ingredients": [],
+        "sugar": 5.0,
+        "sodium": 2300.0,
+        "potassium": 3500.0,
+        "fat_ratio": 0.25
+    },
+    "5": { # 복합 알러지 (유제품, 계란, 견과류)
+        "restricted_ingredients": ["우유", "계란", "견과류"],
+        "is_allergy_only": True # 수치 제한 없음
+    },
+    "6": { # 당뇨 + 투석 전 신장질환 + 대두 알러지
+        "restricted_ingredients": ["대두"],
+        "sugar": 5.0,
+        "protein": 42.0,
+        "sodium": 2300.0,
+        "phosphorus": 1000.0
+    },
+    "7": { # 고혈압 + 생선/조개류 알러지
+        "restricted_ingredients": ["고등어", "조개"],
+        "sodium": 2300.0,
+        "potassium": 3500.0,
+        "fat_ratio": 0.25
+    },
+    "user_8": { # 모든 질환 복합 (최악의 시나리오 - 고위험군)
+        "restricted_ingredients": ["땅콩", "밀"],
+        "sugar": 5.0,
+        "protein": 42.0,
+        "sodium": 2300.0,
+        "potassium": 2000.0, # 신장질환 기준 적용
+        "phosphorus": 1000.0,
+        "fat_ratio": 0.25
+    },
+    "9": { # 고령자 타겟 (고혈압 + 투석 중 신장질환)
+        "restricted_ingredients": [],
+        "protein": 84.0,
+        "sodium": 2300.0,
+        "potassium": 2000.0,
+        "phosphorus": 1000.0,
+        "fat_ratio": 0.25
+    }
+}
+
+allergy_substitution_rules = {
+    "description": "식약처 고시 22종 알레르기 유발 물질별 대체 식재료 추천 가이드",
+    "rules": [
+      {
+        "category": "난류",
+        "items": ["계란", "메추리알", "오리알"],
+        "substitutes": ["두부", "병아리콩 거품(아쿠아파바)", "치아씨드 페이스트", "강낭콩"],
+        "usage_tip": "베이킹 시 계란의 결합력은 아쿠아파바나 바나나로 대체 가능합니다."
+      },
+      {
+        "category": "우유",
+        "items": ["우유", "산양유", "원유", "탈지분유", "환원유", "환원무지방우유", "가공유"],
+        "substitutes": ["두유", "아몬드유", "오트유", "쌀음료", "코코넛밀크"],
+        "usage_tip": "크리미한 질감을 원할 경우 코코넛밀크나 캐슈넛 밀크가 적합합니다."
+      },
+      {
+        "category": "메밀",
+        "items": ["메밀"],
+        "substitutes": ["쌀", "밀", "감자 전분", "고구마 전분"],
+        "usage_tip": "면 요리 시 쌀면이나 전분 함량이 높은 면으로 쫄깃함을 대체합니다."
+      },
+      {
+        "category": "땅콩",
+        "items": ["땅콩"],
+        "substitutes": ["해바라기씨", "호박씨", "캐슈넛(견과류 알러지 없을 시)", "병아리콩"],
+        "usage_tip": "고소한 맛은 볶은 씨앗류나 콩류로 대체 가능합니다."
+      },
+      {
+        "category": "대두",
+        "items": ["대두"],
+        "substitutes": ["완두콩", "병아리콩", "코코넛 아미노스(간장 대체)", "퀴노아"],
+        "usage_tip": "간장 대신 코코넛 아미노스를 사용하면 대두 없이 감칠맛을 낼 수 있습니다."
+      },
+      {
+        "category": "밀",
+        "items": ["밀"],
+        "substitutes": ["쌀가루", "귀리가루", "타피오카 가루", "메밀가루(메밀 알러지 없을 시)"],
+        "usage_tip": "글루텐 프리 가루 믹스를 사용하여 점성을 조절하세요."
+      },
+      {
+        "category": "잣",
+        "items": ["잣"],
+        "substitutes": ["해바라기씨", "호박씨", "마카다미아"],
+        "usage_tip": "바질 페스토 등 소스 제작 시 씨앗류로 대체 가능합니다."
+      },
+      {
+        "category": "호두",
+        "items": ["호두"],
+        "substitutes": ["피칸", "호박씨", "볶은 귀리"],
+        "usage_tip": "식감과 풍미가 유사한 피칸이 가장 좋은 대안입니다."
+      },
+      {
+        "category": "게/새우",
+        "items": ["게", "새우"],
+        "substitutes": ["흰살 생선", "버섯", "두부"],
+        "usage_tip": "탱글한 식감은 버섯이나 어묵(성분 확인 필수)으로 대체합니다."
+      },
+      {
+        "category": "돼지고기/쇠고기/닭고기",
+        "items": ["돼지고기", "쇠고기", "닭고기"],
+        "substitutes": ["콩고기", "템페", "버섯류", "생선"],
+        "usage_tip": "단백질원은 식물성 단백질이나 대체육으로 보충합니다."
+      },
+      {
+        "category": "복숭아/토마토",
+        "items": ["복숭아", "토마토"],
+        "substitutes": ["사과", "자두(복숭아 대용)", "빨간 파프리카(토마토 대용)"],
+        "usage_tip": "토마토 소스의 색감과 산미는 파프리카와 식초 조합으로 흉내 낼 수 있습니다."
+      },
+      {
+        "category": "아황산류",
+        "items": ["아황산류(산화방지제)"],
+        "substitutes": ["천연 발효 식초", "레몬즙", "생과일"],
+        "usage_tip": "가공식품보다는 신선 식품 위주의 선택이 필수적입니다."
+      },
+      {
+        "category": "조개류/굴/전복/홍합",
+        "items": ["조개류", "굴", "전복", "홍합"],
+        "substitutes": ["다시마", "표고버섯", "멸치(생선 알러지 없을 시)"],
+        "usage_tip": "국물 요리의 감칠맛은 해조류와 버섯으로 충분히 낼 수 있습니다."
+      },
+      {
+        "category": "오징어",
+        "items": ["오징어"],
+        "substitutes": ["문어(연체류 알러지 확인)", "버섯", "곤약"],
+        "usage_tip": "쫄깃한 식감은 데친 곤약이나 버섯 기둥으로 대체 가능합니다."
+      }
+    ]
+  }

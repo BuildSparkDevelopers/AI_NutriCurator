@@ -3,7 +3,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.pyc
 
 # Virtual environments
 venv/
@@ -92,6 +91,3 @@ volumes/
 # Misc
 # =========================
 .cache/
-
-#db연결 테스트 파일. 
-db_ping.py

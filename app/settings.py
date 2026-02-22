@@ -1,7 +1,5 @@
 # 환경변수(.env)에서 JWT 설정을 읽어서 settings로 제공
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import computed_field  
 
 import os
 
@@ -19,28 +17,4 @@ class Settings:
     PASSWORD_MIN_LEN: int = 10
     PASSWORD_MAX_LEN: int = 72
 
-
-
-class Settings(BaseSettings):
-    POSTGRES_DB: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: int = 5432
-
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-    )
-
-    @computed_field
-    @property
-    def DATABASE_URL(self) -> str:
-        return (
-            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
-            f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-        )
-
-
-settings = Settings() 
+settings = Settings()
