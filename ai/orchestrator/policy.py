@@ -3,7 +3,7 @@ class RouterLogic:
         #
         pass
 
-    def run(self, state: overallState) -> str:
+    def run(self, state: dict) -> str:
         print("\n⚙️ [Orch-Agent] 규칙 기반 경로 판단 중...")
 
         # 1. 데이터 추출
@@ -17,7 +17,7 @@ class RouterLogic:
         flag_keys = ["diabetes_flag", "hypertension_flag", "kidneydisease_flag", "allergy_flag"]
 
         # 플래그 값 추출 (dict.get을 사용하여 키가 없는 경우 None 처리)
-        flags = [u_profile.get(key) for key in flag_keys]
+        flags = [u_profile.get(key, state.get(key)) for key in flag_keys]
 
         # --- [조건분기 시작] ---
 

@@ -44,10 +44,11 @@ const decisionConfig: Record<Decision, { icon: typeof ShieldCheck; color: string
 };
 
 export default function AIMessagePanel({ productId, productName }: AIMessagePanelProps) {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, token } = useAuth();
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [expanded, setExpanded] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAnalyze = async () => {
     if (!isLoggedIn) {
@@ -56,18 +57,40 @@ export default function AIMessagePanel({ productId, productName }: AIMessagePane
     }
 
     setStatus("loading");
-    await new Promise((r) => setTimeout(r, 2000));
+    setError(null);
 
-    setResult({
-      decision: "caution",
-      reason_summary: `고혈압 전단계 사용자로 "${productName}"의 나트륨 함량(420mg)이 일일 권장 섭취량 대비 높은 편입니다. 저염 대체 상품을 확인해보세요.`,
-      alternatives: [
-        { id: 10046, name: "저염 김치찌개" },
-        { id: 10049, name: "퀴노아 현미 밥" },
-        { id: 10048, name: "곤약 젤리 복숭아" },
-      ],
-    });
-    setStatus("done");
+    try {
+      // 백엔드 API 호출
+      const response = await fetch("/api/v1/ai/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          product_id: productId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "분석 중 오류가 발생했습니다");
+      }
+
+      const data = await response.json();
+
+      setResult({
+        decision: data.decision || "safe",
+        reason_summary: data.reason_summary || "분석이 완료되었습니다",
+        alternatives: data.alternatives || [],
+      });
+      setStatus("done");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "분석 중 오류가 발생했습니다";
+      setError(errorMessage);
+      setStatus("idle");
+      console.error("분석 오류:", err);
+    }
   };
 
   if (status === "idle") {
@@ -88,6 +111,11 @@ export default function AIMessagePanel({ productId, productName }: AIMessagePane
             </p>
           </div>
         </div>
+        {error && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-xs text-red-600">{error}</p>
+          </div>
+        )}
         <button
           onClick={handleAnalyze}
           className="w-full py-3 bg-primary text-white font-medium text-sm rounded-lg hover:bg-primary-dark transition-colors"

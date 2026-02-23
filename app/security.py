@@ -87,6 +87,26 @@ def create_access_token(
 
 def decode_token(token: str, secret_key: str, algorithm: str) -> Dict[str, Any]:
     # 역할: 토큰 검증(서명/만료) 실패 시 ValueError
+    
+    # Mock 토큰 처리 (개발 전용)
+    # 형식: "header.payload.mock_signature"
+    if token.endswith(".mock_signature"):
+        try:
+            parts = token.split(".")
+            if len(parts) == 3:
+                import json
+                import base64
+                payload_b64 = parts[1]
+                # Base64 padding 추가
+                padding = 4 - len(payload_b64) % 4
+                if padding != 4:
+                    payload_b64 += '=' * padding
+                payload_json = base64.urlsafe_b64decode(payload_b64).decode('utf-8')
+                payload = json.loads(payload_json)
+                return payload
+        except Exception:
+            raise ValueError("INVALID_TOKEN")
+    
     try:
         payload = jwt.decode(token, secret_key, algorithms=[algorithm])
         return payload
