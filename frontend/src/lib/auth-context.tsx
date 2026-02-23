@@ -23,6 +23,7 @@ interface AuthContextType {
   user: User | null;
   healthProfile: UserHealthProfile | null;
   isLoggedIn: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (
     email: string,
@@ -65,25 +66,28 @@ const mockHealthProfile: UserHealthProfile = {
 function loadStoredAuth(): {
   user: User | null;
   healthProfile: UserHealthProfile | null;
+  token: string | null;
 } {
-  if (typeof window === "undefined") return { user: null, healthProfile: null };
+  if (typeof window === "undefined") return { user: null, healthProfile: null, token: null };
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!raw) return { user: null, healthProfile: null };
+    if (!raw) return { user: null, healthProfile: null, token: null };
     const parsed = JSON.parse(raw) as {
       user: User;
       healthProfile: UserHealthProfile;
+      token: string;
     };
     return {
       user: parsed.user ?? null,
       healthProfile: parsed.healthProfile ?? null,
+      token: parsed.token ?? null,
     };
   } catch {
-    return { user: null, healthProfile: null };
+    return { user: null, healthProfile: null, token: null };
   }
 }
 
-function saveAuth(user: User | null, healthProfile: UserHealthProfile | null) {
+function saveAuth(user: User | null, healthProfile: UserHealthProfile | null, token: string | null = null) {
   if (typeof window === "undefined") return;
   try {
     if (!user || !healthProfile) {
@@ -91,7 +95,7 @@ function saveAuth(user: User | null, healthProfile: UserHealthProfile | null) {
     } else {
       localStorage.setItem(
         AUTH_STORAGE_KEY,
-        JSON.stringify({ user, healthProfile }),
+        JSON.stringify({ user, healthProfile, token }),
       );
     }
   } catch {}
@@ -101,21 +105,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [healthProfile, setHealthProfile] =
     useState<UserHealthProfile | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const { user: u, healthProfile: h } = loadStoredAuth();
+    const { user: u, healthProfile: h, token: t } = loadStoredAuth();
     if (u && h) {
       setUser(u);
       setHealthProfile(h);
+      setToken(t);
     }
   }, []);
+
+  const generateMockToken = (userId: number): string => {
+    // Mock JWT 토큰 생성 (실제로는 백엔드에서 제공해야 함)
+    const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+    const payload = btoa(JSON.stringify({ sub: userId, iat: Date.now() }));
+    const signature = "mock_signature";
+    return `${header}.${payload}.${signature}`;
+  };
 
   const login = useCallback(async (email: string, _password: string) => {
     if (email) {
       const newUser = { ...mockUser, email };
+      const newToken = generateMockToken(newUser.user_id);
       setUser(newUser);
       setHealthProfile(mockHealthProfile);
-      saveAuth(newUser, mockHealthProfile);
+      setToken(newToken);
+      saveAuth(newUser, mockHealthProfile, newToken);
       return true;
     }
     return false;
@@ -159,9 +175,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         favorite: "",
         goal: "",
       };
+      const newToken = generateMockToken(newUser.user_id);
       setUser(newUser);
       setHealthProfile(newProfile);
-      saveAuth(newUser, newProfile);
+      setToken(newToken);
+      saveAuth(newUser, newProfile, newToken);
       return true;
     },
     [],
@@ -170,7 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setUser(null);
     setHealthProfile(null);
-    saveAuth(null, null);
+    setToken(null);
+    saveAuth(null, null, null);
   }, []);
 
   return (
@@ -179,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         healthProfile,
         isLoggedIn: !!user,
+        token,
         login,
         signup,
         logout,

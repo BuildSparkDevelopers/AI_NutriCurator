@@ -74,9 +74,9 @@ class overallState(TypedDict):
     kidneydisease_flag: int
     allergy_flag: int
 
-    diabetes_detail: Literal["TYPE_1", "TYPE_2", "GESTATIONAL"] | None
-    hypertension_detail: Literal["STAGE_1", "STAGE_2"] | None
-    kidney_detail: Literal["CKD_1_2", "CKD_3_4", "CKD_5_DIALYSIS"] | None
+    diabetes_detail: Literal["DIABETES"] | None #"TYPE_1", "TYPE_2", "GESTATIONAL"
+    hypertension_detail: Literal["HYPERTENSION"] | None #"STAGE_1", "STAGE_2"
+    kidney_detail: Literal["CKD_3_5", "HD", "PD"] | None
     allergy_list: List[str]
 
     #guidelines: List[str]
