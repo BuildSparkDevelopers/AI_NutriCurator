@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Iterable
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-# ✅ 너희 ORM 모델 경로에 맞춰 import 경로만 조정하면 됨
+# ORM 모델 경로에 맞춰 import 경로만 조정하면 됨
 from domain.models.product import Product
 from domain.models.user_health_profile import UserHealthProfile
 from domain.models.cart_item import CartItem
@@ -13,10 +13,10 @@ from domain.models.cart_item import CartItem
 
 class AgentDBAdapter:
     """
-    ✅ DB(Session) -> agent가 쓰던 dict/json 포맷으로 공급하는 단일 어댑터.
+     DB(Session) -> agent가 쓰던 dict/json 포맷으로 공급하는 단일 어댑터.
 
-    - agent는 "dict/json"만 받는다 (기존 유지)
-    - 이 어댑터가 DB에서 조회해서 dict로 변환해준다.
+    - agent는 "dict/json"만 받기기 (기존 유지)
+    - DB에서 조회해서 dict로 변환해준다.
     """
 
     def __init__(self, db: Session):
