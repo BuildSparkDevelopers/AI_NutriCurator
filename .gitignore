@@ -91,3 +91,7 @@ volumes/
 # Misc
 # =========================
 .cache/
+
+# Database dumps & Data files
+*.sql
+*.csv

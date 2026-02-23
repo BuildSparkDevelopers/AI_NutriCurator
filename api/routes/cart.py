@@ -17,13 +17,27 @@ def add_to_cart(
     user_id: int = Depends(get_current_user_id),
     service: CartService = Depends(get_cart_service),
 ):
-    item = service.add_item(
-        user_id=user_id,
-        product_id=payload.product_id,
-        analysis_snapshot=payload.analysis_snapshot,
-    )
-    return item
+    # 1) 정규화: "0010" -> "10"
+    try:
+        product_id = str(int(str(payload.product_id).strip()))
+    except Exception:
+        raise HTTPException(status_code=400, detail="PRODUCT_ID_MUST_BE_DIGITS")
 
+    # 2) 서비스 호출 + 에러 매핑
+    try:
+        item = service.add_item(
+            user_id=user_id,
+            product_id=product_id,
+            analysis_snapshot=payload.analysis_snapshot,
+        )
+        return item
+    except ValueError as e:
+        if str(e) == "PRODUCT_NOT_FOUND":
+            raise HTTPException(status_code=404, detail="PRODUCT_NOT_FOUND")
+        if str(e) == "PRODUCT_ID_MUST_BE_DIGITS":
+            raise HTTPException(status_code=400, detail="PRODUCT_ID_MUST_BE_DIGITS")
+        raise HTTPException(status_code=400, detail=str(e))
+    
 
 @router.get("", response_model=CartListResponse)
 def list_cart(

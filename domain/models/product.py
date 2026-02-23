@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from sqlalchemy import Integer, String, Boolean, DateTime, func, Text, UniqueConstraint
+from sqlalchemy import Integer, String, Boolean, DateTime, func, Text, UniqueConstraint,Float
 from sqlalchemy.orm import Mapped, mapped_column
 from domain.models.base import Base
 
@@ -9,7 +9,7 @@ from domain.models.base import Base
 class Product(Base):
     __tablename__ = "products"
     __table_args__ = (
-        UniqueConstraint("brand", name="uq_products_brand"),  # 너 스펙 그대로
+        UniqueConstraint("brand", name="uq_products_brand"),  # ERD 스펙 그대로
     )
 
     product_id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -34,20 +34,20 @@ class Product(Base):
     rawmtrl: Mapped[str | None] = mapped_column(Text, nullable=True)
     allergymtrl: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    kcal: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    protein_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    fat_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    ash_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    carb_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    sugar_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    sodium_mg: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    cholesterol_mg: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    sat_fat_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    trans_fat_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    kcal: Mapped[float | None] = mapped_column(Float, nullable=True)
+    protein_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fat_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ash_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    carb_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sugar_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sodium_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    cholesterol_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sat_fat_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    trans_fat_g: Mapped[float | None] = mapped_column(Float, nullable=True)
 
-    nutrient_basis_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    serving_ref_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    food_weight_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    nutrient_basis_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    serving_ref_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    food_weight_g: Mapped[float | None] = mapped_column(Float, nullable=True)
 
-    gi: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    gl: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gi: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gl: Mapped[float | None] = mapped_column(Float, nullable=True)

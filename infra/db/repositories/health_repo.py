@@ -1,15 +1,43 @@
- # 역할: health_profiles 저장/조회만 담당
-
 from typing import Optional
-from infra.db.store import InMemoryStore
+from sqlalchemy.orm import Session
+from sqlalchemy import select
+
+from domain.models.user_health_profile import UserHealthProfile
+
+# ✅ 지금 \d+로 확인된 컬럼들만 일단 반영
+PROFILE_FIELDS = {
+    "gender",
+    "birth_date",
+    "height",
+    "weight",
+    "average_of_steps",
+    "activity_level",
+    "diabetes",
+}
 
 class HealthProfileRepository:
-    def __init__(self, db: InMemoryStore):
+    def __init__(self, db: Session):
         self.db = db
 
     def get_by_user_id(self, user_id: int) -> Optional[dict]:
-        return self.db.health_profiles.get(user_id)
+        stmt = select(UserHealthProfile).where(UserHealthProfile.user_id == user_id)
+        row = self.db.execute(stmt).scalar_one_or_none()
+        if row is None:
+            return None
+        return {k: getattr(row, k) for k in PROFILE_FIELDS}
 
     def upsert(self, user_id: int, profile: dict) -> dict:
-        self.db.health_profiles[user_id] = profile
-        return profile
+        payload = {k: v for k, v in profile.items() if k in PROFILE_FIELDS}
+
+        stmt = select(UserHealthProfile).where(UserHealthProfile.user_id == user_id)
+        row = self.db.execute(stmt).scalar_one_or_none()
+
+        if row is None:
+            row = UserHealthProfile(user_id=user_id, **payload)
+            self.db.add(row)
+        else:
+            for k, v in payload.items():
+                setattr(row, k, v)
+
+        self.db.commit()
+        return {k: getattr(row, k) for k in PROFILE_FIELDS}
