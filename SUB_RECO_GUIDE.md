@@ -130,14 +130,84 @@ $$\text{Score} = 100 - (0.6 \times R_{cal} + 0.4 \times R_{sugar})$$
 #### 4.3 신장질환 점수
 
 ```python
-score = DiseaseScoring.calculate_kidney_disease_score(nutrients)
+score = DiseaseScoring.calculate_kidney_disease_score(
+        nutrients,
+        kidney_stage="CKD_3_5",     # "CKD_3_5" | "HD" | "PD"
+        is_processed_food=False,     # 가공식품 여부 (인 흡수율 보정)
+        weight=None                  # 사용자 체중(kg)
+)
 ```
 
-**감점 기준**:
+신장질환 점수는 영양소별 비선형 함수로 계산한 뒤, 요인별 점수를 집계합니다. 구현은 다음과 같습니다.
 
-- 나트륨: 100mg마다 -2점
-- 인(P): 50mg마다 -3점
-- 칼륨(K): 100mg마다 -2점
+1) 나트륨 점수 (Hill, n=10)
+
+$$\text{Score}_{Na} = \min\left(139.5 \cdot \frac{x^{10}}{730^{10} + x^{10}},\ 100\right)$$
+
+2) 칼륨 점수 (신장 단계별)
+
+- CKD 3-5 단계:
+$$\text{Score}_{K} = \min\left(141.8 \cdot \frac{x^{5}}{420^{5} + x^{5}},\ 100\right)$$
+
+- 혈액투석(HD):
+$$\text{Score}_{K} = \min\left(140.2 \cdot \frac{x^{5}}{550^{5} + x^{5}},\ 100\right)$$
+
+- 복막투석(PD): (Michaelis-Menten)
+$$\text{Score}_{K} = \min\left(102 \cdot \frac{x}{150 + x},\ 100\right)$$
+
+3) 인 점수 (가공식품 보정 + Hill, n=6)
+
+$$x_{eff} = \begin{cases}
+1.5x & (\text{is\_processed\_food}=\text{True})\\
+x & (\text{그 외})
+\end{cases}$$
+$$\text{Score}_{P} = 118.8 \cdot \frac{x_{eff}^{6}}{250^{6} + x_{eff}^{6}}$$
+
+4) 단백질 점수 (체중 기반, 단계별 차등)
+
+- 체중 정보 없음: $\text{Score}_{Pr} = 50$
+
+- CKD 3-5 단계:
+    - 일일 총 단백질 = $0.6 \times \text{weight(kg)}$, 한 끼 $L = \frac{0.6w}{3}$
+    - $K = 0.85L$, $n=2$, $C = 100 \cdot \frac{K^n + L^n}{L^n}$
+    - $$\text{Score}_{Pr} = \min\left(C \cdot \frac{x^{n}}{K^{n} + x^{n}},\ 100\right)$$
+
+- 투석(HD, PD):
+    - 일일 총 단백질 = $1.2 \times \text{weight(kg)}$, 한 끼 $T = \frac{1.2w}{3}$
+    - $$\text{Score}_{Pr} = \min\left(100 \cdot \left(\frac{x - T}{T}\right)^{2},\ 100\right)$$
+
+5) 최종 점수 집계
+
+요인별 점수 $[\text{Score}_{Na}, \text{Score}_{K}, \text{Score}_{P}, \text{Score}_{Pr}]$에 대해
+
+$$\text{Final} = 0.7 \times \max(\cdot) + 0.3 \times \text{avg}(\cdot)$$
+
+최종 점수는 0-100 범위로 클램프됩니다.
+
+매개변수
+
+- `kidney_stage`: "CKD_3_5" | "HD" | "PD" (기본: "CKD_3_5")
+- `is_processed_food`: True이면 인 흡수율을 1.5배로 가정
+- `weight`: 체중(kg). 미설정 시 단백질 점수는 50으로 처리
+
+단위
+
+- sodium, potassium, phosphorus: mg
+- protein: g
+
+예시
+
+```python
+# CKD 3-5, 비가공, 체중 65kg
+score = DiseaseScoring.calculate_kidney_disease_score(
+        nutrients, kidney_stage="CKD_3_5", is_processed_food=False, weight=65.0
+)
+
+# 혈액투석 환자, 가공식품, 체중 70kg
+score = DiseaseScoring.calculate_kidney_disease_score(
+        nutrients, kidney_stage="HD", is_processed_food=True, weight=70.0
+)
+```
 
 ---
 
@@ -163,12 +233,24 @@ score = reco.calculate_health_score(product_id, disease_type)
 
 # 예시
 score = reco.calculate_health_score("0", "hypertension")  # 결과: 34.3
+
+# 신장질환(추가 인자 사용)
+score = reco.calculate_health_score(
+    "0",
+    "kidney_disease",
+    kidney_stage="HD",
+    is_processed_food=True,
+    weight=70.0,
+)
 ```
 
 **Parameters**:
 
 - `product_id` (str): DB의 상품 ID
 - `disease_type` (str): `"diabetes"`, `"hypertension"`, `"kidney_disease"`
+- `kidney_stage` (str, optional): 신장질환 단계. `"CKD_3_5"` | `"HD"` | `"PD"` (kidney_disease에만 적용)
+- `is_processed_food` (bool, optional): 가공식품 여부로 인 흡수율 1.5배 가정 (kidney_disease에만 적용)
+- `weight` (float, optional): 사용자 체중(kg). 미설정 시 단백질 점수는 50 처리 (kidney_disease에만 적용)
 
 **Return**: float (0-100 범위)
 
@@ -195,6 +277,16 @@ is_valid = reco.validate_swap(chosen_id, recommended_id, disease_type)
 
 # 예시: 고들빼기김치 → 아몬드맛 (고혈압)
 is_valid = reco.validate_swap("2", "1", "hypertension")  # True
+
+# 예시: 신장질환 (CKD 3-5, 체중/가공 여부 반영)
+is_valid = reco.validate_swap(
+    "10",
+    "11",
+    "kidney_disease",
+    kidney_stage="CKD_3_5",
+    is_processed_food=False,
+    weight=65.0,
+)
 ```
 
 **동작**:
@@ -439,6 +531,12 @@ if reco.validate_swap("2", product_id, "hypertension"):
 ⚠️ **점수 범위**
 
 - 모든 질병의 점수는 0-100 범위
+
+⚠️ **신장질환 파라미터**
+
+- `weight` 미설정 시 단백질 점수는 50으로 처리되어 정확도가 낮아질 수 있습니다.
+- `is_processed_food=True`면 인(phosphorus) 흡수율을 1.5배로 가정합니다.
+- `kidney_stage`에 따라 칼륨(k) 점수 함수가 달라집니다. (CKD 3-5, HD, PD)
 
 ---
 

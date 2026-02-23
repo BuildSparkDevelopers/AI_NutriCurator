@@ -27,6 +27,11 @@ services:
     env_file:
       - .env
 
+    environment:
+      # 컨테이너 내부에서 DB 서비스 접근 (localhost가 아님)
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+
     depends_on:
       postgres:
         condition: service_healthy
