@@ -94,4 +94,4 @@ volumes/
 
 # Database dumps & Data files
 *.sql
-*.csv
+*.csvbuildspark.pem
