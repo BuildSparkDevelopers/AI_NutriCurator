@@ -284,13 +284,13 @@ class DiseaseScoring:
         
         # ====================================================================
         # 5. 최종 점수 계산
-        # Score_kidney = (0.7 × max(scores)) + (0.3 × average(scores))
+        # riskScore_kidney = (0.7 × max(scores)) + (0.3 × average(scores))
         # ====================================================================
-        scores = [score_na, score_k, score_p, score_pr]
-        max_score = max(scores)
-        avg_score = sum(scores) / len(scores)
+        riskscores = [score_na, score_k, score_p, score_pr]
+        max_riskscore = max(riskscores)
+        avg_riskscore = sum(riskscores) / len(riskscores)
         
-        final_score = (0.7 * max_score) + (0.3 * avg_score)
+        final_score = 100 - ((0.7 * max_riskscore) + (0.3 * avg_riskscore))
         
         return max(0, min(final_score, 100))
 
@@ -379,6 +379,53 @@ class SubstitutionReco:
             )
         else:
             return 50  # 기본값
+
+    def calculate_health_scores(
+        self,
+        product_id: str,
+        state: Dict[str, Any]
+    ) -> Dict[str, float]:
+        """
+        overallState에 설정된 질병 플래그(=1)만 선택하여, 해당 질병들의 건강 점수를 일괄 계산합니다.
+
+        Args:
+            product_id: 상품 ID (str)
+            state: overallState(dict). 예: {"user_profile": {"diabetes_flag": 1, ...}}
+
+        Returns:
+            Dict[str, float]: 활성화된 질병에 대해서만 {disease_type: score} 형태로 반환
+        """
+        nutrients = self.get_product_nutrients(product_id)
+        if not nutrients:
+            return {}
+
+        user_profile = state.get("user_profile", {}) if isinstance(state, dict) else {}
+
+        results: Dict[str, float] = {}
+
+        # 당뇨병
+        if user_profile.get("diabetes_flag") == 1:
+            results["diabetes"] = self.scoring.calculate_diabetes_score(nutrients)
+
+        # 고혈압
+        if user_profile.get("hypertension_flag") == 1:
+            results["hypertension"] = self.scoring.calculate_hypertension_score(nutrients)
+
+        # 신장질환
+        if user_profile.get("kidneydisease_flag") == 1:
+            # 병증별 옵션은 overallState(user_profile)에 저장된 값을 우선 사용
+            kidney_detail = user_profile.get("kidney_detail", "CKD_3_5")
+            processed = user_profile.get("is_processed_food", False)
+            weight = user_profile.get("weight")
+
+            results["kidney_disease"] = self.scoring.calculate_kidney_disease_score(
+                nutrients,
+                kidney_stage=str(kidney_detail),
+                is_processed_food=bool(processed),
+                weight=weight if (isinstance(weight, (int, float)) and weight > 0) else None,
+            )
+
+        return results
     
     def validate_swap(
         self,
@@ -499,6 +546,45 @@ class SubstitutionReco:
         recommendations.sort(key=lambda x: x["score"], reverse=True)
         
         return recommendations
+
+    def run(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        LangGraph 파이프라인에서 호출할 수 있는 Node 래퍼 메서드.
+        state 객체 내부의 값이나 reco_agent에서 생성된 후보 리스트 등을 
+        추출하여 generate_recommendations를 실행하고 결과를 state에 병합하여 반환합니다.
+        """
+        # reco_agent에서 만든 후보 상품 추출 (가정: state["candidates"])
+        # 만약 state 구조에서 다른 키를 사용한다면 그에 맞게 수정 필요
+        candidates = state.get("candidates", [])
+        
+        if not candidates:
+            print("⚠️ [Sub-Reco] 전달받은 Candidate가 없어 추천을 생성할 수 없습니다.")
+            state["sub_recommendations"] = []
+            return state
+
+        # user_profile이 state에 없다면 직접 state를 사용하도록 fallback
+        user_profile = state.get("user_profile", state)
+
+        # 필요한 추가 파라미터들
+        kidney_stage = user_profile.get("kidney_detail", "CKD_3_5")
+        is_processed_food = user_profile.get("is_processed_food", False)
+        weight = user_profile.get("weight")
+
+        print("\n⚙️ [Sub-Reco] 대체 상품 추천 계산 중...")
+        recos = self.generate_recommendations(
+            state=state,
+            candidates=candidates,
+            kidney_stage=kidney_stage,
+            is_processed_food=is_processed_food,
+            weight=weight
+        )
+        
+        # 결과를 state에 저장
+        state["sub_recommendations"] = recos
+        state["next_step"] = "resp_agent"  # 다음으로 넘어갈 에이전트 지정
+        print(f"✅ [Sub-Reco] 대안 상품 추천 완료 (총 {len(recos)}개)")
+        
+        return state
 
 
 # ============================================================================

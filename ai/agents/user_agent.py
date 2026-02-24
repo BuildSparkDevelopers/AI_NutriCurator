@@ -38,23 +38,33 @@ class ProfileRetrieval:
         mock_db = {
             "user_001": {
                 "name": "김철수",
-                "diabetes": 1,        # 당뇨 있음
-                "hypertension": 1,    # 고혈압 있음
-                "kidneydisease": 0,
-                "allergy": 0
+                "diabetes_flag": 1,        # 당뇨 있음
+                "hypertension_flag": 1,    # 고혈압 있음
+                "kidneydisease_flag": 0,
+                "allergy_flag": 0,
+                "diabetes_detail": "Type 2",
+                "hypertension_detail": "Stage 1",
+                "kidneydisease_detail": "None",
+                "allergy_list": []
             },
             "user_002": {
                 "name": "이영희",
-                "diabetes": 0,
-                "hypertension": 0,
-                "kidneydisease": 1,   # 신장질환 있음
-                "allergy": 1          # 알러지 있음
+                "diabetes_flag": 0,
+                "hypertension_flag": 0,
+                "kidneydisease_flag": 1,   # 신장질환 있음
+                "allergy_flag": 1,         # 알러지 있음
+                "diabetes_detail": "None",
+                "hypertension_detail": "None",
+                "kidneydisease_detail": "Stage 3",
+                "allergy_list": ["대두", "땅콩"]
             }
         }
 
         # DB에 없으면 기본값 반환
         return mock_db.get(user_id, {
-            "name": "Unknown", "diabetes": 0, "hypertension": 0, "kidneydisease": 0, "allergy": 0
+            "name": "Unknown", 
+            "diabetes_flag": 0, "hypertension_flag": 0, "kidneydisease_flag": 0, "allergy_flag": 0,
+            "diabetes_detail": "None", "hypertension_detail": "None", "kidneydisease_detail": "None", "allergy_list": []
         })
 
     def run(self, state: OverallState, config: RunnableConfig = None) -> Dict[str, Any]:
@@ -69,10 +79,10 @@ class ProfileRetrieval:
         # 3. LLM에게 분석 요청 (0/1 데이터를 텍스트 가이드로 변환)
         #    프롬프트에 질병 정보를 요약해서 전달
         health_summary = (
-            f"당뇨: {'있음' if user_profile['diabetes'] else '없음'}, "
-            f"고혈압: {'있음' if user_profile['hypertension'] else '없음'}, "
-            f"신장질환: {'있음' if user_profile['kidneydisease'] else '없음'}, "
-            f"알러지: {'있음' if user_profile['allergy'] else '없음'}"
+            f"당뇨: {'있음' if user_profile['diabetes_flag'] else '없음'}, "
+            f"고혈압: {'있음' if user_profile['hypertension_flag'] else '없음'}, "
+            f"신장질환: {'있음' if user_profile['kidneydisease_flag'] else '없음'}, "
+            f"알러지: {'있음' if user_profile['allergy_flag'] else '없음'}"
         )
 
         system_msg = "당신은 임상 영양사입니다. 환자의 질병 정보를 바탕으로 식단 가이드와 주의 성분을 추출하세요."

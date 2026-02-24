@@ -11,27 +11,20 @@ class EvidenceGeneration:
         self.products = products if products is not None else {}
 
 # 1. 당뇨, 고혈압, 신부전 분석
-    def evaluate_threshold(self, final_profile_key, product_key) -> overallState:
+    def evaluate_threshold(self, state: dict) -> dict:
         """
-        영양성분 임계값 초과 여부를 분석하여 overallState 형식으로 반환합니다.
+        영양성분 임계값 초과 여부를 분석하여 state(overallState)를 업데이트하여 반환합니다.
         """
-        profile = self.final_profiles.get(str(final_profile_key), {})
-        product = self.products.get(str(product_key), {})
-'''
-        # 디버깅: 데이터 확인
-        print(f"\n=== 디버깅 정보 ===")
-        print(f"final_profile_key: {final_profile_key} (type: {type(final_profile_key)})")
-        print(f"product_key: {product_key} (type: {type(product_key)})")
-        print(f"profile 데이터: {profile}")
-        print(f"product 데이터: {product}")
-        print(f"self.final_profiles의 키들: {list(self.final_profiles.keys())}")
-        print(f"self.products의 키들: {list(self.products.keys())}")
-'''
-        # 1. overallState 구조에 맞게 결과 객체 초기화
-        state: overallState = {
-            "any_exceed": False,
-            "exceeded_nutrients": []
-        }
+        user_id = state.get("user_id")
+        product_id = state.get("product_id")
+        
+        # profile은 final_profile을 우선적으로 가져오고, 없으면 ID로 조회
+        profile = state.get("final_profile", self.final_profiles.get(str(user_id), {}))
+        product = self.products.get(str(product_id), {})
+
+        # 결과 저장소 초기화 (기존 state 보존)
+        state["any_exceed"] = False
+        state["exceeded_nutrients"] = []
 
         # 2. 분석 제외 키 설정
         exclude_keys = ['user_id', 'restricted_ingredients']
@@ -60,6 +53,7 @@ class EvidenceGeneration:
                         state["any_exceed"] = True
                         state["exceeded_nutrients"].append(nutrient)
                     else:
+                        pass
                         #print(f"  ✅ 비율 적정")
             # 일반적인 경우: 기준 초과 여부 확인 (Exceed)
             else:
@@ -68,6 +62,7 @@ class EvidenceGeneration:
                     state["any_exceed"] = True
                     state["exceeded_nutrients"].append(nutrient)
                 else:
+                    pass
                     #print(f"  ✅ 기준 이하")
         
         #print(f"\n=== 최종 결과 ===")
@@ -81,18 +76,27 @@ class EvidenceGeneration:
 # 2. 알러지 분석
 
 
-    def generate_allergy_prompt(self, product_key, final_profile_key, tone_key=None, max_new_tokens=512):
+    def generate_allergy_prompt(self, state: dict, tone_key=None, max_new_tokens=512) -> dict:
         """
-        정의된 모듈의 Key 값을 받아 최적화된 시스템 프롬프트를 생성합니다.
+        정의된 모듈의 Key 값을 받아 최적화된 시스템 프롬프트를 생성하고 state를 업데이트합니다.
         """
-        # 2.1. 클래스 외부 변수 데이터 가져오기 (데이터가 없을 경우를 대비해 get 사용)
-        p = products.get(str(product_key))
-        f = final_profiles.get(str(final_profile_key))
-        sub_rules = allergy_substitution_rules
+        user_id = state.get("user_id")
+        product_id = state.get("product_id")
 
-        # 2.2. 예외 처리: 데이터가 없는 경우 None이 아닌 명확한 문자열 반환
+        # 2.1. 클래스 외부 변수 데이터 가져오기 (데이터가 없을 경우를 대비해 get 사용)
+        p = self.products.get(str(product_id), {})
+        f = state.get("final_profile", self.final_profiles.get(str(user_id), {}))
+        # sub_rules = self.allergy_substitution_rules  # (필요시 클래스 속성으로 접근)
+        
+        # 임시: 외부 전역 변수 참조로 보이므로 그대로 두되 안전하게 fallback 처리
+        sub_rules = globals().get('allergy_substitution_rules', {})
+
+        # 2.2. 예외 처리: 데이터가 없는 경우 기존 state 반환
         if not p or not f:
-            return f"Error: 정보를 찾을 수 없습니다. (Product: {product_key}, Profile: {final_profile_key})"
+            print(f"Error: 정보를 찾을 수 없습니다. (Product: {product_id}, Profile: {user_id})")
+            state["any_allergen"] = False
+            state["substitute"] = []
+            return state
 
         # 2.3. 시스템 프롬프트
         system_msg = f"""당신은 식품 성분 및 화학 분석 전문가입니다.
@@ -206,11 +210,9 @@ class EvidenceGeneration:
         #print(raw_response)
         #print(f"===================\n")
 
-        # overallState 초기화
-        state: overallState = {
-            "any_allergen": False,
-            "substitute": []
-        }
+        # overallState 기존 필드 보존을 위해 일부 필드만 업데이트
+        state["any_allergen"] = False
+        state["substitute"] = []
 
         try:
             # JSON 추출: 마크다운 코드 블록 제거 및 JSON 부분만 추출
