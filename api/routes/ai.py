@@ -3,8 +3,7 @@ from pydantic import BaseModel
 from typing import Any, Dict
 
 from api.deps import get_current_user_id, get_user_service, get_product_service
-from infra.db.repositories.generate_final_profile import generate_final_profile
-from ai.orchestrator.policy import RouterLogic
+from ai.orchestrator.graph import compile_graph
 
 router = APIRouter(prefix="/api/v1/ai", tags=["AI"])
 
@@ -80,27 +79,35 @@ def analyze(
             "final_answer": ""
         }
         
-        # 5. Orchestrator 정책 실행
-        policy = RouterLogic()
-        next_step = policy.run(overall_state)
+        # 5. Orchestrator 정책 실행 -> 이제 전체 LangGraph 파이프라인(graph.py)을 실행합니다.
+        app = compile_graph()
         
-        # 6. 결과 구성
+        # 그래프 실행. 전체 노드를 순회하고 최종 상태(Dict)를 받습니다.
+        final_state = app.invoke(overall_state)
+        
+        # 6. 결과 구성 (LangGraph 최종 state 기반)
         decision = "safe"  # 기본값
-        reason_summary = ""
-        alternatives = []
+        reason_summary = final_state.get("final_answer", "")
+        alternatives = final_state.get("sub_recommendations", [])
         
-        # 정책에 따른 결과 해석
-        if next_step == "end" and not overall_state.get("any_exceed") and not overall_state.get("any_allergen"):
+        any_exceed = final_state.get("any_exceed", False)
+        any_allergen = final_state.get("any_allergen", False)
+        
+        # 정책에 따른 결과 해석 (프론트엔드 호환용)
+        if not any_exceed and not any_allergen:
             decision = "safe"
-            reason_summary = f"✅ {product_detail.get('name')}은(는) 건강 프로필상 안전한 상품입니다."
-        elif overall_state.get("any_exceed") or overall_state.get("any_allergen"):
+            if not reason_summary:
+                reason_summary = f"✅ {product_detail.get('name')}은(는) 건강 프로필상 안전한 상품입니다."
+        elif any_exceed or any_allergen:
             decision = "warning"
-            exceed_list = overall_state.get("exceeded_nutrients", [])
-            allergen_info = " 알러지 유발 성분이 포함되어 있습니다." if overall_state.get("any_allergen") else ""
-            reason_summary = f"⚠️ 이 상품은 {', '.join(exceed_list) if exceed_list else '건강 기준'}에 맞지 않습니다.{allergen_info}"
+            if not reason_summary:
+                exceed_list = final_state.get("exceeded_nutrients", [])
+                allergen_info = " 알러지 유발 성분이 포함되어 있습니다." if any_allergen else ""
+                reason_summary = f"⚠️ 이 상품은 {', '.join(exceed_list) if exceed_list else '건강 기준'}에 맞지 않습니다.{allergen_info}"
         else:
             decision = "caution"
-            reason_summary = f"⚡ {product_detail.get('name')}을(를) 섭취할 때 주의가 필요합니다."
+            if not reason_summary:
+                reason_summary = f"⚡ {product_detail.get('name')}을(를) 섭취할 때 주의가 필요합니다."
         
         return {
             "status": "ok",
@@ -108,7 +115,8 @@ def analyze(
             "reason_summary": reason_summary,
             "alternatives": alternatives,
             "product_name": product_detail.get("name", ""),
-            "next_step": next_step
+            "next_step": final_state.get("next_step", "end"),
+            "full_state_debug": final_state # 프론트에서 전체 상태를 확인해볼 수 있게 임시 추가
         }
         
     except HTTPException:
