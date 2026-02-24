@@ -547,6 +547,45 @@ class SubstitutionReco:
         
         return recommendations
 
+    def run(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        LangGraph 파이프라인에서 호출할 수 있는 Node 래퍼 메서드.
+        state 객체 내부의 값이나 reco_agent에서 생성된 후보 리스트 등을 
+        추출하여 generate_recommendations를 실행하고 결과를 state에 병합하여 반환합니다.
+        """
+        # reco_agent에서 만든 후보 상품 추출 (가정: state["candidates"])
+        # 만약 state 구조에서 다른 키를 사용한다면 그에 맞게 수정 필요
+        candidates = state.get("candidates", [])
+        
+        if not candidates:
+            print("⚠️ [Sub-Reco] 전달받은 Candidate가 없어 추천을 생성할 수 없습니다.")
+            state["sub_recommendations"] = []
+            return state
+
+        # user_profile이 state에 없다면 직접 state를 사용하도록 fallback
+        user_profile = state.get("user_profile", state)
+
+        # 필요한 추가 파라미터들
+        kidney_stage = user_profile.get("kidney_detail", "CKD_3_5")
+        is_processed_food = user_profile.get("is_processed_food", False)
+        weight = user_profile.get("weight")
+
+        print("\n⚙️ [Sub-Reco] 대체 상품 추천 계산 중...")
+        recos = self.generate_recommendations(
+            state=state,
+            candidates=candidates,
+            kidney_stage=kidney_stage,
+            is_processed_food=is_processed_food,
+            weight=weight
+        )
+        
+        # 결과를 state에 저장
+        state["sub_recommendations"] = recos
+        state["next_step"] = "resp_agent"  # 다음으로 넘어갈 에이전트 지정
+        print(f"✅ [Sub-Reco] 대안 상품 추천 완료 (총 {len(recos)}개)")
+        
+        return state
+
 
 # ============================================================================
 # 5. LLM 프롬프트 생성

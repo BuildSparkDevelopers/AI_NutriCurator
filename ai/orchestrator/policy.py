@@ -7,8 +7,6 @@ class RouterLogic:
         print("\n⚙️ [Orch-Agent] 규칙 기반 경로 판단 중...")
 
         # 1. 데이터 추출
-        u_profile = state.get("user_profile", {})
-        
         # chat_agent에서 설정된 분석 결과 추출
         any_exceed = state.get("any_exceed", False)
         any_allergen = state.get("any_allergen", False)
@@ -16,8 +14,8 @@ class RouterLogic:
         # 체크할 플래그 리스트
         flag_keys = ["diabetes_flag", "hypertension_flag", "kidneydisease_flag", "allergy_flag"]
 
-        # 플래그 값 추출 (dict.get을 사용하여 키가 없는 경우 None 처리)
-        flags = [u_profile.get(key, state.get(key)) for key in flag_keys]
+        # 플래그 값 추출 (바로 state에서 꺼냄)
+        flags = [state.get(key) for key in flag_keys]
 
         # --- [조건분기 시작] ---
 

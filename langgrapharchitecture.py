@@ -15,9 +15,8 @@ tool calling을 위한 래핑 필요 - 챗지피티 대화 참고
 import torch
 import gc
 
-# 모델 객체 삭제
-del model
-
+# (Jupyter Notebook 환경에서 모델 객체 삭제하던 부분 스크립트화 시 에러로 주석처리)
+# del model
 # 가비지 컬렉션 강제 실행
 gc.collect()
 
@@ -122,7 +121,6 @@ class KFDAAllergen(str, Enum):
     PINE_NUT = "잣"
     # ... (나머지 포함 총 22종)
 
-'''
 # 파이널 프로필 생성 메서드
 # LangGraph 실행단에서는 DB에 저장되어 있음을 가정함
 # final_profile: dict
@@ -135,27 +133,25 @@ def generate_final_profile(user_id, user_diseases, user_weight):
             "restricted_ingredients": ["milk", "egg", "peanut", "nuts", "soy", "wheat", "fish", "shellfish"]
         },
         "kidneydisease_pre_dialysis": {  # CKD 3-5단계 (투석 전)
-            "protein": 0.60 * weight, # kg당 계산
-            "sodium": 2300,
-            "phosphorus": 1000,
-            "calcium": 1000,
-            "kcal": 35 * weight
+            "protein": 0.20 * user_weight, # kg당 계산 (1일 기준: 0.60 * user_weight)
+            "sodium": 766.67,              # 1일 기준: 2300
+            "phosphorus": 333.33,          # 1일 기준: 1000
+            "calcium": 333.33              # 1일 기준: 1000
         },
         "kidneydisease_dialysis": {      # CKD 5단계 (투석)
-            "protein": 1.2 * weight,
-            "sodium": 2300,
-            "potassium": 2000,
-            "phosphorus": 1000,
-            "calcium": 1000,
-            "kcal": 35 * weight
+            "protein": 0.40 * user_weight, # kg당 계산 (1일 기준: 1.2 * user_weight)
+            "sodium": 766.67,              # 1일 기준: 2300
+            "potassium": 666.67,           # 1일 기준: 2000
+            "phosphorus": 333.33,          # 1일 기준: 1000
+            "calcium": 333.33              # 1일 기준: 1000
         },
         "diabetes": {
-            "sugar": 5
+            "sugar": 1.67                  # 1일 기준: 5
         },
         "hypertension": {
-            "sodium": 2300,
-            "potassium_min": 3500, # > 3500mg
-            "fat_ratio": 0.25      # 총 열량의 25% 이하
+            "sodium": 766.67,              # 1일 기준: 2300
+            "potassium_min": 1166.67,      # > 1166.67mg (1일 기준: 3500)
+            "fat_ratio": 0.25              # 총 열량의 25% 이하 (비율이므로 그대로 유지)
         }
     }
 
@@ -362,16 +358,14 @@ final_profiles = {
         "protein": 42.0,  # 0.6 * 70
         "sodium": 2300.0,
         "phosphorus": 1000.0,
-        "calcium": 1000.0,
-        "calories": 2450.0    # 35 * 70
+        "calcium": 1000.0
     },
     "3": { # 투석 중 신장질환 + 밀 알러지
         "restricted_ingredients": ["밀"],
         "protein": 84.0,  # 1.2 * 70
         "sodium": 2300.0,
         "potassium": 2000.0,
-        "phosphorus": 1000.0,
-        "calories": 2450.0
+        "phosphorus": 1000.0
     },
     "4": { # 당뇨 + 고혈압 복합 (가장 흔한 케이스)
         "restricted_ingredients": [],
@@ -1192,22 +1186,26 @@ from langgraph.graph import StateGraph
 
 workflow = StateGraph(overallState)
 
-#def user_agent_func(state: overallState):
-#    print("Agent 실행")
-#    return {"next_step": "next"}
+# orchestrator 로직 (policy.py 의 RouterLogic 인스턴스가 orchagent라고 가정)
+# 코드 상단에서 인스턴스가 없다면 아래와 같이 매핑합니다.
+# workflow.add_node("orch_agent", orchagent.run) 
+# 현재 노트북 코드에서는 orchagent 변수 할당이 주석처리되어 있으므로, 
+# 기존 초기화된 RouterLogic() 사용
+orchagent = RouterLogic()
 
+workflow.add_node("orch_agent", orchagent.run)
 
+workflow.add_node("user_agent", useragent.run)
+workflow.add_node("chat_agent", chatagent.evaluate_threshold)
 
+# user 님 요청사항: reco_agent 의 독자적 state 유지를 위해 중간 브릿지 래퍼 사용 
+# 이 코드는 recoagent 가 State 보존을 어떻게 할지에 따라 변경할 수 있으나,
+# 지금은 recoagent.run (또는 정의된 메인 진입점)을 호출한다고 가정합니다.
+# (만약 reco_node 함수가 별도로 정의되어 있다면 해당 함수를 사용하세요)
+workflow.add_node("reco_agent", recoagent.run if hasattr(recoagent, 'run') else lambda state: state)
 
-
-workflow.add_node("orch_agent", user_agent_func)
-
-workflow.add_node("user_agent", user_agent_func)
-
-workflow.add_node("chat_agent", user_agent_func)
-workflow.add_node("reco_agent", user_agent_func)
-workflow.add_node("sub_reco_agent", user_agent_func)
-workflow.add_node("resp_agent", user_agent_func)
+workflow.add_node("sub_reco_agent", subsagent.run if hasattr(subsagent, 'run') else lambda state: state)
+workflow.add_node("resp_agent", respagent.run if hasattr(respagent, 'run') else lambda state: state)
 
 workflow.add_edge(START, "orch_agent")
 workflow.add_edge("orch_agent", "user_agent")
@@ -1228,11 +1226,13 @@ workflow.add_edge("sub_reco_agent", "resp_agent")
 
 workflow.add_conditional_edges(
     "orch_agent",               # 시작 노드
-    lambda x: x["next_step"],   # 라우터의 결과값(next_step)을 읽어서
+    lambda x: x.get("next_step", "end"),   # 라우터의 결과값(next_step)을 읽어서
     {                           # 실제 이동할 노드 매핑
-        "user_agent": "user_agent_node",
-        "chat_agent": "chat_agent_node",
-        "reco_agent": "reco_agent_node",
+        "user_agent": "user_agent",
+        "chat_agent": "chat_agent",
+        "reco_agent": "reco_agent",
+        "sub_reco_agent": "sub_reco_agent",
+        "resp_agent": "resp_agent",
         "end": END
     }
 )
