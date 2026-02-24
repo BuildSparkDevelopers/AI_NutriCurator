@@ -1,8 +1,25 @@
-# 역할: FastAPI Depends로 "DB 세션처럼" STORE 주입
-# 나중에 PostgreSQL 붙이면 여기만 SQLAlchemy session으로 교체
+# infra/db/session.py
 
-from typing import Generator
-from infra.db.store import STORE, InMemoryStore
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from app.settings import settings
 
-def get_db() -> Generator[InMemoryStore, None, None]:
-    yield STORE
+engine = create_engine(settings.DATABASE_URL, future=True, pool_pre_ping=True)
+
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+
+def get_db():
+    """
+    FastAPI dependency
+    - 요청 들어올 때 세션 열고
+    - 요청 끝나면 닫아줌
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def get_session():
+    # 기존 get_db랑 완전 동일 (이름만 맞춰주는 용)
+    yield from get_db()

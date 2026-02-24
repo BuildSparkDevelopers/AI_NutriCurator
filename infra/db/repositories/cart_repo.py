@@ -3,39 +3,87 @@
 # - 비즈니스 규칙(중복 처리, 응답 모양)은 service에서 담당
 
 from typing import List, Optional, Dict, Any
-from infra.db.store import InMemoryStore
+
+from sqlalchemy.orm import Session
+from sqlalchemy import select, delete
+
+from domain.models.cart_item import CartItem
+
 
 class CartRepository:
-    def __init__(self, db: InMemoryStore):
+    def __init__(self, db: Session):
         self.db = db
 
-    def list_items(self, user_id: str) -> List[dict]:
-        return self.db.cart_items.get(user_id, [])
+    def list_items(self, user_id: int) -> List[dict]:
+        rows = (
+            self.db.execute(
+                select(CartItem)
+                .where(CartItem.user_id == user_id)
+                .order_by(CartItem.item_id.desc())
+            )
+            .scalars()
+            .all()
+        )
+        return [
+            {
+                "item_id": r.item_id,
+                "user_id": r.user_id,
+                "product_id": r.product_id,
+                "analysis_snapshot": r.analysis_snapshot,
+            }
+            for r in rows
+        ]
 
-    def get_item(self, user_id: str, item_id: int) -> Optional[dict]:
-        items = self.db.cart_items.get(user_id, [])
-        for it in items:
-            if it.get("item_id") == item_id:
-                return it
-        return None
-
-    def create_item(self, user_id: str, product_id: str, analysis_snapshot: Optional[Dict[str, Any]] = None) -> dict:
-        if user_id not in self.db.cart_items:
-            self.db.cart_items[user_id] = []
-
-        item = {
-            "item_id": self.db.next_cart_item_id,
-            "product_id": product_id,
-            "analysis_snapshot": analysis_snapshot,
+    def get_item(self, user_id: int, item_id: int) -> Optional[dict]:
+        r = (
+            self.db.execute(
+                select(CartItem).where(
+                    CartItem.user_id == user_id,
+                    CartItem.item_id == item_id,
+                )
+            )
+            .scalar_one_or_none()
+        )
+        if r is None:
+            return None
+        return {
+            "item_id": r.item_id,
+            "user_id": r.user_id,
+            "product_id": r.product_id,
+            "analysis_snapshot": r.analysis_snapshot,
         }
-        self.db.next_cart_item_id += 1
 
-        self.db.cart_items[user_id].append(item)
-        return item
+    def create_item(
+        self,
+        user_id: int,
+        product_id: str,
+        analysis_snapshot: Optional[Dict[str, Any]] = None,
+    ) -> dict:
+        obj = CartItem(
+            user_id=user_id,
+            product_id=product_id,
+            analysis_snapshot=analysis_snapshot,
+        )
+        self.db.add(obj)
+        self.db.commit()
+        self.db.refresh(obj)
 
-    def delete_item(self, user_id: str, item_id: int) -> bool:
-        items = self.db.cart_items.get(user_id, [])
-        before = len(items)
-        items = [it for it in items if it.get("item_id") != item_id]
-        self.db.cart_items[user_id] = items
-        return len(items) != before
+        return {
+            "item_id": obj.item_id,
+            "user_id": obj.user_id,
+            "product_id": obj.product_id,
+            "analysis_snapshot": obj.analysis_snapshot,
+        }
+
+    def delete_item(self, user_id: int, item_id: int) -> bool:
+        result = self.db.execute(
+            delete(CartItem).where(
+                CartItem.user_id == user_id,
+                CartItem.item_id == item_id,
+            )
+        )
+        deleted = result.rowcount or 0
+        if deleted == 0:
+            return False
+        self.db.commit()
+        return True

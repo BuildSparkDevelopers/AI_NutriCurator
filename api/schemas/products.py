@@ -1,15 +1,19 @@
 # 역할: 프론트/Swagger와 약속하는 데이터 모양 (응답 스키마)
 
+from __future__ import annotations
+
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
+
 class ProductSummary(BaseModel):
-    product_id: str
+    product_id: int  # DB는 int니까 int로 두는 게 안전 (문자열 필요하면 str로 바꿔도 됨)
     name: str
     category: Optional[str] = None
     brand: Optional[str] = None
     price: Optional[int] = None
     image_url: Optional[str] = None
+
 
 class ProductListResponse(BaseModel):
     total: int
@@ -17,8 +21,9 @@ class ProductListResponse(BaseModel):
     offset: int
     items: List[ProductSummary]
 
+
 class ProductDetailResponse(BaseModel):
-    product_id: str
+    product_id: int
     name: str
     category: Optional[str] = None
     brand: Optional[str] = None
@@ -45,6 +50,4 @@ class ProductDetailResponse(BaseModel):
 
     inferred_types: List[str] = Field(default_factory=list)
 
-    # 혹시 이후 영양정보를 dict로 확장할 때 대비 (선택)
     nutrients: Dict[str, Any] = Field(default_factory=dict)
-

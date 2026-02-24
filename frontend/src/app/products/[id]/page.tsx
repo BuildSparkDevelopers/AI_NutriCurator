@@ -211,7 +211,7 @@ export default function ProductDetailPage() {
               className="flex-1 h-12 bg-primary text-white font-medium text-sm rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center gap-2"
             >
               <ShoppingCart size={18} />
-              분석 담기
+              장바구니 담기
             </button>
           </div>
 
