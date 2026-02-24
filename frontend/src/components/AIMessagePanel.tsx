@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, ShieldCheck, AlertTriangle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { getProductById } from "@/lib/mock-data";
 
 interface AIMessagePanelProps {
   productId: number;
@@ -13,10 +16,13 @@ interface AIMessagePanelProps {
 type AnalysisStatus = "idle" | "loading" | "done";
 type Decision = "safe" | "caution" | "warning";
 
+/** 추천 상품: [이미지URL, 상품명, 키워드?, 상품ID?] */
+export type AlternativeItem = [string, string, string?, number?];
+
 interface AnalysisResult {
   decision: Decision;
   reason_summary: string;
-  alternatives: { id: number; name: string }[];
+  alternatives: AlternativeItem[];
 }
 
 const decisionConfig: Record<Decision, { icon: typeof ShieldCheck; color: string; bg: string; border: string; label: string }> = {
@@ -78,11 +84,22 @@ export default function AIMessagePanel({ productId, productName }: AIMessagePane
       }
 
       const data = await response.json();
+      const rawAlts = data.alternatives || [];
+
+      // API 응답을 [이미지, 상품명, 키워드?, 상품ID?][] 형식으로 변환
+      const alternatives: AlternativeItem[] = rawAlts.map((alt: { product_id?: number; id?: number; name?: string; reason?: string; image_url?: string }) => {
+        const pid = alt.product_id ?? alt.id;
+        const name = alt.name ?? "";
+        const keywords = alt.reason ?? "";
+        const product = pid ? getProductById(Number(pid)) : null;
+        const image = alt.image_url ?? product?.image_url ?? "https://picsum.photos/seed/placeholder/400/400";
+        return [image, name || product?.name ?? "상품", keywords || undefined, pid ? Number(pid) : undefined];
+      });
 
       setResult({
         decision: data.decision || "safe",
         reason_summary: data.reason_summary || "분석이 완료되었습니다",
-        alternatives: data.alternatives || [],
+        alternatives,
       });
       setStatus("done");
     } catch (err) {
@@ -223,21 +240,51 @@ export default function AIMessagePanel({ productId, productName }: AIMessagePane
 
               {result.alternatives.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-2">
+                  <p className="text-xs font-medium text-gray-500 mb-3">
                     🔄 AI 추천 대체 상품
                   </p>
-                  <div className="space-y-2">
-                    {result.alternatives.map((alt) => (
-                      <a
-                        key={alt.id}
-                        href={`/products/${alt.id}`}
-                        className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-200 hover:border-primary/40 transition-colors text-sm text-gray-600 hover:text-primary"
-                      >
-                        <ShieldCheck size={14} className="text-safe-green shrink-0" />
-                        {alt.name}
-                        <span className="ml-auto text-xs text-primary">보기 →</span>
-                      </a>
-                    ))}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+                    {result.alternatives.map(([image, name, keywords, productId], idx) => {
+                      const content = (
+                        <>
+                          <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                            <Image
+                              src={image}
+                              alt={name}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                              unoptimized
+                            />
+                          </div>
+                          <p className="text-xs font-medium text-gray-600 mt-1.5 line-clamp-2">
+                            {name}
+                          </p>
+                          {keywords && (
+                            <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2">
+                              {keywords}
+                            </p>
+                          )}
+                        </>
+                      );
+                      const wrapperClass = "block p-2 sm:p-3 bg-white rounded-xl border border-gray-200 hover:border-primary/40 transition-colors text-left group";
+                      return productId ? (
+                        <Link
+                          key={`${productId}-${idx}`}
+                          href={`/products/${productId}`}
+                          className={wrapperClass}
+                        >
+                          {content}
+                          <span className="text-[10px] text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            보기 →
+                          </span>
+                        </Link>
+                      ) : (
+                        <div key={idx} className={wrapperClass}>
+                          {content}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

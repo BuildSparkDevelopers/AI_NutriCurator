@@ -9,7 +9,7 @@ const banners = [
     id: 1,
     title: "AI가 분석하는\n나만의 건강 맞춤 식품",
     subtitle: "건강 프로필 기반 식품 추천 서비스",
-    bg: "from-primary to-emerald-700",
+    bg: "from-[#37C47B] to-emerald-700",
   },
   {
     id: 2,
