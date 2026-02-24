@@ -27,11 +27,9 @@ class Hypertension(enum.Enum):
     na = "na"
 
 class KidneyDisease(enum.Enum):
-    chronic_kidney_disease = "chronic_kidney_disease"
-    kidney_failure = "kidney_failure"
-    kidney_stones = "kidney_stones"
-    proteinuria = "proteinuria"
-    nephrotic_syndrome = "nephrotic_syndrome"
+    CKD_3_5 = "CKD_3_5"
+    HD = "HD"
+    PD = "PD"
     na = "na"
 
 class Allergy(enum.Enum):

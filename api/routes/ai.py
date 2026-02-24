@@ -88,7 +88,23 @@ def analyze(
         # 6. 결과 구성 (LangGraph 최종 state 기반)
         decision = "safe"  # 기본값
         reason_summary = final_state.get("final_answer", "")
-        alternatives = final_state.get("sub_recommendations", [])
+        raw_alternatives = final_state.get("sub_recommendations", [])
+
+        # alternatives 풍부화: product_id → name, image_url, reason(키워드)
+        alternatives = []
+        for alt in raw_alternatives:
+            pid = alt.get("product_id")
+            try:
+                detail = product_service.get_product_detail(product_id=str(pid)) if pid else {}
+            except (ValueError, Exception):
+                detail = {}
+            alternatives.append({
+                "product_id": pid,
+                "id": pid,
+                "name": detail.get("name") or alt.get("name") or f"상품 {pid}",
+                "image_url": detail.get("image_url"),
+                "reason": alt.get("reason", ""),
+            })
         
         any_exceed = final_state.get("any_exceed", False)
         any_allergen = final_state.get("any_allergen", False)
