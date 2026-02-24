@@ -8,12 +8,11 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from infra.db.session import get_db  # ✅ 하나로 통일
+from infra.db.fake_data import load_fake_db
 
-from infra.db.repositories.user_repo import UserRepository
-from infra.db.repositories.health_repo import HealthProfileRepository
-from infra.db.repositories.product_repo import ProductRepository
-from infra.db.repositories.cart_repo import CartRepository
+from infra.db.repositories.fake_user_repo import FakeUserRepository
+from infra.db.repositories.fake_health_repo import FakeHealthProfileRepository
+from infra.db.repositories.fake_product_repo import FakeProductRepository
 
 from domain.services.auth_service import AuthService
 from domain.services.user_service import UserService
@@ -25,7 +24,21 @@ from app.settings import settings
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
+
+def _is_fake_mode() -> bool:
+    return str(settings.AI_DATA_SOURCE).strip().lower() == "fake"
+
+
+def get_db():
+    from infra.db.session import get_db as _get_db
+
+    yield from _get_db()
+
+
 def get_repos(db=Depends(get_db)):
+    from infra.db.repositories.user_repo import UserRepository
+    from infra.db.repositories.health_repo import HealthProfileRepository
+
     return UserRepository(db), HealthProfileRepository(db)
 
 def get_auth_service(repos=Depends(get_repos)) -> AuthService:
@@ -33,6 +46,12 @@ def get_auth_service(repos=Depends(get_repos)) -> AuthService:
     return AuthService(user_repo)
 
 def get_user_service(repos=Depends(get_repos)) -> UserService:
+    if _is_fake_mode():
+        fake_db = load_fake_db()
+        user_repo = FakeUserRepository(fake_db.get("users", {}))
+        health_repo = FakeHealthProfileRepository(fake_db.get("users", {}))
+        return UserService(user_repo, health_repo)
+
     user_repo, health_repo = repos
     return UserService(user_repo, health_repo)
 
@@ -63,17 +82,25 @@ def get_current_user_id(
     return int(sub)
 
 # ✅ product도 get_db로 통일
-def get_product_repo(db=Depends(get_db)) -> ProductRepository:
+def get_product_repo(db=Depends(get_db)):
+    if _is_fake_mode():
+        fake_db = load_fake_db()
+        return FakeProductRepository(fake_db.get("products", {}))
+
+    from infra.db.repositories.product_repo import ProductRepository
+
     return ProductRepository(db)
 
-def get_product_service(repo: ProductRepository = Depends(get_product_repo)) -> ProductService:
+def get_product_service(repo=Depends(get_product_repo)) -> ProductService:
     return ProductService(repo)
 
-def get_cart_repo(db=Depends(get_db)) -> CartRepository:
+def get_cart_repo(db=Depends(get_db)):
+    from infra.db.repositories.cart_repo import CartRepository
+
     return CartRepository(db)
 
 def get_cart_service(
-    cart_repo: CartRepository = Depends(get_cart_repo),
-    product_repo: ProductRepository = Depends(get_product_repo),
+    cart_repo=Depends(get_cart_repo),
+    product_repo=Depends(get_product_repo),
 ) -> CartService:
     return CartService(cart_repo, product_repo)

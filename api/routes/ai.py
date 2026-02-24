@@ -56,13 +56,20 @@ def analyze(
         hypertension_flag = convert_to_flag(health_profile.get("hypertension", "N/A"))
         kidneydisease_flag = convert_to_flag(health_profile.get("kidneydisease", "N/A"))
         allergy_flag = convert_to_flag(health_profile.get("allergy", ""))
+        enriched_user_profile = {
+            **health_profile,
+            "diabetes_flag": diabetes_flag,
+            "hypertension_flag": hypertension_flag,
+            "kidneydisease_flag": kidneydisease_flag,
+            "allergy_flag": allergy_flag,
+        }
         
         # 4. Overall State 구성
         overall_state = {
             "user_id": str(user_id),
             "product_id": str(req.product_id),
             "name": product_detail.get("name", ""),
-            "user_profile": health_profile,
+            "user_profile": enriched_user_profile,
             "product_data": product_detail,
             
             # 건강 정보

@@ -34,6 +34,8 @@ class RouterLogic:
         # 0과 1로 구성되어 있다고 가정 (True/False여도 sum 가능)
         flag_sum = sum(int(f) for f in flags)
 
+        if flag_sum >= 1 and state.get("threshold_checked", False):
+            return self._log_and_return("end", "기준 분석 완료 및 위험 없음")
         if flag_sum >= 1:
             return self._log_and_return("chat_agent", f"질환/알러지 보유 ({flag_sum}단계)")
         else:

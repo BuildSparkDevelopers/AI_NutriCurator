@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "apppassword"
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
+    AI_DATA_SOURCE: str = "postgres"
 
     @computed_field
     @property

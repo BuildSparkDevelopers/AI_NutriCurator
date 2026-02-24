@@ -25,6 +25,7 @@ class EvidenceGeneration:
         # 결과 저장소 초기화 (기존 state 보존)
         state["any_exceed"] = False
         state["exceeded_nutrients"] = []
+        state["threshold_checked"] = True
 
         # 2. 분석 제외 키 설정
         exclude_keys = ['user_id', 'restricted_ingredients']
