@@ -11,3 +11,5 @@ psycopg[binary]==3.3.3
 psycopg2-binary==2.9.11
 alembic==1.18.4
 langgraph==1.0.9
+langchain-core
+langchain-openai
