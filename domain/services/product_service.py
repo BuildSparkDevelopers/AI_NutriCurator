@@ -36,3 +36,12 @@ class ProductService:
         if product is None:
             raise ValueError("PRODUCT_NOT_FOUND")
         return product
+
+    def get_products_index(self) -> Dict[str, dict]:
+        """
+        분석 파이프라인(reco/sub-reco)에서 사용하는 상품 인덱스.
+        key는 product_id 문자열로 통일한다.
+        """
+        if hasattr(self.product_repo, "get_products_index"):
+            return self.product_repo.get_products_index()
+        return {}

@@ -25,6 +25,7 @@ class overallState(TypedDict):
     hypertension_detail: Literal["HYPERTENSION"] | None #"STAGE_1", "STAGE_2"
     kidney_detail: Literal["CKD_3_5", "HD", "PD"] | None
     allergy_list: List[str]
+    allergy_detail: List[str]
 
     #guidelines: List[str]
     final_profile: dict

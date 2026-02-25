@@ -12,7 +12,7 @@ class HealthProfileUpsertRequest(BaseModel):
     diabetes: Optional[str] = None
     hypertension: Optional[str] = None
     kidneydisease: Optional[str] = None
-    allergy: Optional[str] = None
+    allergy: Optional[list[str]] = None
 
     favorite: Optional[str] = None
     goal: Optional[str] = None

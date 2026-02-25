@@ -2,7 +2,6 @@ from langgraph.graph import StateGraph, START, END
 
 # Import the standardized state schema
 from ai.state.schema import overallState
-from infra.db.fake_data import load_fake_db
 
 # Import Agents
 from ai.orchestrator.policy import RouterLogic
@@ -12,26 +11,28 @@ from ai.agents.reco_agent import Recommendation
 from ai.agents.sub_reco_agent import SubstitutionReco
 from ai.agents.composer_agent import ResponseGeneration
 
-FAKE_DB = load_fake_db()
 orchagent = RouterLogic()
-useragent = ProfileRetrieval(model=None)
-chatagent = EvidenceGeneration(
-    model=None,
-    tokenizer=None,
-    final_profiles=FAKE_DB.get("final_profiles", {}),
-    products=FAKE_DB.get("products", {}),
-)
-recoagent = Recommendation(products_db=FAKE_DB.get("products", {}))
-subsagent = SubstitutionReco(products_db=FAKE_DB.get("products", {}))
-respagent = ResponseGeneration()
 
 
 def orch_node(state: dict) -> dict:
     next_step = orchagent.run(state)
     return {"next_step": next_step}
 
-def create_workflow() -> StateGraph:
+def create_workflow(*, products_db: dict, final_profiles: dict | None = None) -> StateGraph:
     workflow = StateGraph(overallState)
+    final_profiles = final_profiles or {}
+
+    # Nodes with runtime-injected data source
+    useragent = ProfileRetrieval(model=None)
+    chatagent = EvidenceGeneration(
+        model=None,
+        tokenizer=None,
+        final_profiles=final_profiles,
+        products=products_db,
+    )
+    recoagent = Recommendation(products_db=products_db)
+    subsagent = SubstitutionReco(products_db=products_db, final_profiles=final_profiles)
+    respagent = ResponseGeneration()
 
     # 1. Add Nodes
     workflow.add_node("orch_agent", orch_node)
@@ -68,10 +69,10 @@ def create_workflow() -> StateGraph:
     return workflow
 
 # For standalone execution / testing
-def compile_graph():
-    workflow = create_workflow()
+def compile_graph(*, products_db: dict, final_profiles: dict | None = None):
+    workflow = create_workflow(products_db=products_db, final_profiles=final_profiles)
     return workflow.compile()
 
 if __name__ == "__main__":
-    app = compile_graph()
+    app = compile_graph(products_db={})
     print("LangGraph Compiled Successfully!")

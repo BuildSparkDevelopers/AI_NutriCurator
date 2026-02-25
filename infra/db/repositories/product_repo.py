@@ -130,5 +130,18 @@ class ProductRepository:
 
         items = [self._to_summary_dict(p) for p in rows]
         return items, total
+
+    def get_products_index(self) -> Dict[str, Dict[str, Any]]:
+        """
+        분석 파이프라인에서 사용할 전체 상품 상세 맵.
+        key는 product_id 문자열.
+        """
+        stmt = select(Product).where(Product.is_active.is_(True)).order_by(Product.product_id)
+        rows = list(self.db.execute(stmt).scalars().all())
+        indexed: Dict[str, Dict[str, Any]] = {}
+        for product in rows:
+            key = str(product.product_id)
+            indexed[key] = self._to_detail_dict(product)
+        return indexed
     
    

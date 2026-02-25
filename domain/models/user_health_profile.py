@@ -2,6 +2,7 @@ import enum
 from sqlalchemy import (
     String, Integer, ForeignKey, Date, Enum, Numeric, Text
 )
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from domain.models.base import Base
@@ -33,16 +34,29 @@ class KidneyDisease(enum.Enum):
     na = "na"
 
 class Allergy(enum.Enum):
-    egg = "egg"
-    milk = "milk"
-    peanut = "peanut"
-    tree_nut = "tree_nut"
-    shellfish = "shellfish"
-    fish = "fish"
-    wheat = "wheat"
-    soy = "soy"
-    peach = "peach"
-    na = "na"
+    EGG = "EGG"
+    MILK = "MILK"
+    BUCKWHEAT = "BUCKWHEAT"
+    PEANUT = "PEANUT"
+    SOYBEAN = "SOYBEAN"
+    WHEAT = "WHEAT"
+    MACKEREL = "MACKEREL"
+    CRAB = "CRAB"
+    SHRIMP = "SHRIMP"
+    PORK = "PORK"
+    PEACH = "PEACH"
+    TOMATO = "TOMATO"
+    SULFITE = "SULFITE"
+    WALNUT = "WALNUT"
+    CHICKEN = "CHICKEN"
+    BEEF = "BEEF"
+    SQUID = "SQUID"
+    PINE_NUT = "PINE_NUT"
+    SEASAME = "SEASAME"
+    ALMOND = "ALMOND"
+    OYSTER = "OYSTER"
+    ABALONE = "ABALONE"
+    MUSSEL = "MUSSEL"
 
 
 
@@ -72,8 +86,13 @@ class UserHealthProfile(Base):
 
     diabetes: Mapped[Diabetes | None] = mapped_column(Enum(Diabetes, name="diabetes_enum"), nullable=True)
     hypertension: Mapped[Hypertension | None] = mapped_column(Enum(Hypertension, name="hypertension_enum"), nullable=True)
-    kidneydisease: Mapped[KidneyDisease | None] = mapped_column(Enum(KidneyDisease, name="kidney_disease_enum"), nullable=True)
-    allergy: Mapped[Allergy | None] = mapped_column(Enum(Allergy, name="allergy_enum"), nullable=True)
+    kidneydisease: Mapped[KidneyDisease | None] = mapped_column(Enum(KidneyDisease, name="kidneydisease_enum"), nullable=True)
+    allergy: Mapped[list[Allergy]] = mapped_column(
+        ARRAY(Enum(Allergy, name="allergy_enum")),
+        nullable=False,
+        default=list,
+        server_default="{}",
+    )
 
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     favorite: Mapped[str | None] = mapped_column(String(255), nullable=True)

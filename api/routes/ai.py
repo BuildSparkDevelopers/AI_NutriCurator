@@ -63,8 +63,9 @@ def analyze(
             "final_answer": ""
         }
         
-        # 4. Orchestrator 정책 실행 -> 이제 전체 LangGraph 파이프라인(graph.py)을 실행합니다.
-        app = compile_graph()
+        # 4. 분석용 상품 인덱스 주입 후 Orchestrator 실행
+        products_db = product_service.get_products_index()
+        app = compile_graph(products_db=products_db, final_profiles={})
         
         # 그래프 실행. 전체 노드를 순회하고 최종 상태(Dict)를 받습니다.
         final_state = app.invoke(overall_state)

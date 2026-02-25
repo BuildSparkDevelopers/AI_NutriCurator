@@ -8,8 +8,14 @@ Sub-Recommendation Agent
 """
 
 import json
+import re
 from typing import TypedDict, List, Dict, Any, Optional
 from dataclasses import dataclass, field
+
+try:
+    import torch
+except ImportError:  # pragma: no cover - optional dependency
+    torch = None
 
 # ============================================================================
 # 1. STATE 타입 정의
@@ -311,14 +317,198 @@ class SubstitutionReco:
     5. 기존 product 대비 점수 높은 상품 추천
     """
     
-    def __init__(self, products_db: Dict[str, Any]):
+    def __init__(
+        self,
+        products_db: Dict[str, Any],
+        model: Any = None,
+        tokenizer: Any = None,
+        final_profiles: Optional[Dict[str, Any]] = None,
+    ):
         """
         Args:
             products_db: DB의 products 테이블 (Dict[product_id, product_data])
         """
         self.products_db = products_db
+        self.model = model
+        self.tokenizer = tokenizer
+        self.final_profiles = final_profiles if final_profiles is not None else {}
         self.mapper = ColumnMapper()
         self.scoring = DiseaseScoring()
+
+    def _resolve_product(self, product_id: str) -> Dict[str, Any]:
+        """products_db key와 product_id 필드가 다른 구조를 모두 지원"""
+        direct = self.products_db.get(str(product_id))
+        if isinstance(direct, dict) and direct:
+            return direct
+        for product in self.products_db.values():
+            if str(product.get("product_id")) == str(product_id):
+                return product
+        return {}
+
+    def generate_allergy_prompt(self, state: Dict[str, Any], tone_key=None, max_new_tokens: int = 512) -> Dict[str, Any]:
+        """
+        chat_core_agent의 알러지 분석 프롬프트 로직을 sub_reco_agent에서도 재사용.
+        model/tokenizer가 준비되어 있어야 LLM 호출이 가능합니다.
+        """
+        if self.model is None or self.tokenizer is None or torch is None:
+            print("Error: generate_allergy_prompt requires model and tokenizer.")
+            state["any_allergen"] = False
+            state["substitute"] = []
+            return state
+
+        user_id = state.get("user_id")
+        product_id = state.get("product_id")
+
+        p = self._resolve_product(product_id)
+        f = state.get("final_profile", self.final_profiles.get(str(user_id), {}))
+        sub_rules = globals().get("allergy_substitution_rules", {})
+
+        if not p or not f:
+            print(f"Error: 정보를 찾을 수 없습니다. (Product: {product_id}, Profile: {user_id})")
+            state["any_allergen"] = False
+            state["substitute"] = []
+            return state
+
+        system_msg = f"""당신은 식품 성분 및 화학 분석 전문가입니다.
+        주어진 원재료 리스트를 분석하여 사용자의 제한 사항('restricted_ingredients')과 대조하고 솔루션을 제공하세요.
+
+        ### [Layer 1] 식약처 22종 마스터 리스트 기준
+        분석 기준은 대한민국 식약처 고시 알레르기 유발 물질 22종입니다.
+
+        ### [Layer 2] 원재료 추론 및 매핑 규칙
+        1. 성분명에 직접적인 이름이 없더라도 '핵심 기원(Source) 물질'을 식별합니다. (예: '카제인나트륨' -> '우유')
+        2. 대체 식재료는 다음 가이드를 참조하십시오:
+        {sub_rules.get('rules', [])}
+
+        ### [Layer 3] 분석 가이드라인
+        - **Priority**: 1순위 알러지 차단 / 2순위 질환 영양 수치 충족 여부.
+        - **Severity Level**: Critical(함유), Warning(교차 오염 가능성), Safe(무관) 분류.
+        - ** 알러지를 유발할 수 있는 모든 원재료를 표시하세요.
+        - ** 다른사람에게 알러지 가능성 있다 라는 식의 표현 사용하지 마세요.
+        - ** 추론 규칙을 드러내지 마세요.
+        - ** 반드시 아래의 json 형태로만 출력하세요. 주어진 json 컬럼 외에는 답변하지 마세요.
+
+        ### [출력 형식]
+        {{
+          "ingredient_analysis": [
+            {{
+              "detected_ingredient": "성분명",
+              "derived_from": "기원물질(22종 기준)",
+              "substitute": "추천 대체재",
+              "is_allergen": true
+            }}
+          ],
+          "safety_summary": "최종 섭취 가능 여부 및 주의사항",
+        }}
+
+        [예시] few-shot
+        {{
+          "ingredient_analysis": [
+            {{
+              "detected_ingredient": "새우",
+              "derived_from": "새우",
+              "substitute": "흰살 생선, 버섯(킹오이스터), 두부",
+              "is_allergen": false
+            }}
+          ],
+          "safety_summary": "이 제품은 사용자의 알러지 항목인 우유와 땅콩을 포함하고 있지 않으므로 안전하게 섭취 가능합니다.",
+        }}
+        """
+
+        user_msg = f"""
+        [상품 정보]
+        - 상품명: {p.get('name', '알 수 없음')}
+        - 원재료: {p.get('ingerdients', [])}
+        - 제조사 주의사항: {p.get('allergy', '없음')} / {p.get('trace', '없음')}
+
+        [유저 프로필]
+        - 제한 성분: {f.get('restricted_ingredients')}
+        """
+
+        messages = [
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ]
+
+        inputs = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=True,
+            add_generation_prompt=True,
+            return_tensors="pt",
+        ).to(self.model.device)
+
+        attention_mask = inputs.get("attention_mask", None)
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(self.model.device)
+
+        with torch.no_grad():
+            outputs = self.model.generate(
+                input_ids=inputs["input_ids"],
+                attention_mask=attention_mask,
+                max_new_tokens=max_new_tokens,
+                temperature=0.1,
+                top_p=0.9,
+                do_sample=True,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+            )
+
+        prompt_length = inputs["input_ids"].shape[-1]
+        generated_ids = outputs[0][prompt_length:]
+        raw_response = self.tokenizer.decode(generated_ids, skip_special_tokens=True)
+
+        state["any_allergen"] = False
+        state["substitute"] = []
+
+        try:
+            response_text = raw_response.strip()
+
+            if response_text.startswith("```"):
+                lines = response_text.split("\n")
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].strip() == "```":
+                    lines = lines[:-1]
+                response_text = "\n".join(lines)
+
+            start_idx = response_text.find("{")
+            end_idx = response_text.rfind("}")
+
+            if start_idx == -1 or end_idx == -1:
+                print("Error: JSON 형식을 찾을 수 없습니다.")
+                return state
+
+            json_text = response_text[start_idx:end_idx + 1]
+            json_text = re.sub(r",\s*}", "}", json_text)
+            json_text = re.sub(r",\s*]", "]", json_text)
+
+            data = json.loads(json_text)
+            analysis = data.get("ingredient_analysis", [])
+
+            state["any_allergen"] = any(item.get("is_allergen", False) for item in analysis)
+
+            alle_list = []
+            for item in analysis:
+                if item.get("is_allergen", False):
+                    alle = item.get("derived_from", "")
+                    if alle and alle != "없음":
+                        alle_list.extend([s.strip() for s in alle.split(",")])
+            state["allergen"] = list(set(alle_list))
+
+            sub_list = []
+            for item in analysis:
+                if item.get("is_allergen", False):
+                    sub = item.get("substitute", "")
+                    if sub and sub != "없음":
+                        sub_list.extend([s.strip() for s in sub.split(",")])
+            state["substitute"] = list(set(sub_list))
+
+        except json.JSONDecodeError as e:
+            print(f"Parsing Error: {e}")
+            preview = json_text[:200] if "json_text" in locals() else raw_response[:200]
+            print(f"문제가 된 텍스트 (앞 200자): {preview}")
+
+        return state
     
     def get_product_nutrients(self, product_id: str) -> Dict[str, float]:
         """
@@ -330,7 +520,7 @@ class SubstitutionReco:
         Returns:
             영어 인자명으로 정렬된 영양소 Dict
         """
-        product = self.products_db.get(str(product_id), {})
+        product = self._resolve_product(product_id)
         
         if not product:
             return {}

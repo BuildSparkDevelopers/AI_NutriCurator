@@ -75,3 +75,15 @@ class FakeProductRepository:
         total = len(items)
         sliced = items[offset : offset + limit]
         return sliced, total
+
+    def get_products_index(self) -> Dict[str, Dict[str, Any]]:
+        """
+        분석용 상품 맵을 product_id 키 기준으로 반환.
+        """
+        indexed: Dict[str, Dict[str, Any]] = {}
+        for product in self.products.values():
+            pid = str(product.get("product_id") or "").strip()
+            if not pid:
+                continue
+            indexed[pid] = dict(product)
+        return indexed
