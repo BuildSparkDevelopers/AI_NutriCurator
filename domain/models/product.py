@@ -1,21 +1,18 @@
 from __future__ import annotations
 
 from datetime import datetime
-from sqlalchemy import Integer, String, Boolean, DateTime, func, Text, UniqueConstraint,Float
+from sqlalchemy import Integer, String, Boolean, DateTime, func, Text, Float
 from sqlalchemy.orm import Mapped, mapped_column
 from domain.models.base import Base
 
 
 class Product(Base):
     __tablename__ = "products"
-    __table_args__ = (
-        UniqueConstraint("brand", name="uq_products_brand"),  # ERD 스펙 그대로
-    )
 
     product_id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
     name: Mapped[str] = mapped_column(String, nullable=False)
-    brand: Mapped[str] = mapped_column(String, nullable=False)
+    brand: Mapped[str] = mapped_column(Text, nullable=False)
 
     category_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # FK는 다음 단계에
 
