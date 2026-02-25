@@ -4,7 +4,7 @@ class RouterLogic:
         pass
 
     def run(self, state: dict) -> str:
-        print("\n⚙️ [Orch-Agent] 규칙 기반 경로 판단 중...")
+        print("\n[Orch-Agent] 규칙 기반 경로 판단 중...")
 
         # 1. 데이터 추출
         # chat_agent에서 설정된 분석 결과 추출
@@ -42,5 +42,5 @@ class RouterLogic:
             return self._log_and_return("end", "질환/알러지 없음 (정상)")
 
     def _log_and_return(self, next_step, reason):
-        print(f"👉 판단 결과: {next_step} (이유: {reason})")
+        print(f"[Orch-Agent] 판단 결과: {next_step} (이유: {reason})")
         return next_step

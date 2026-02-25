@@ -558,7 +558,7 @@ class SubstitutionReco:
         candidates = state.get("candidates", [])
         
         if not candidates:
-            print("⚠️ [Sub-Reco] 전달받은 Candidate가 없어 추천을 생성할 수 없습니다.")
+            print("[Sub-Reco] 전달받은 Candidate가 없어 추천을 생성할 수 없습니다.")
             state["sub_recommendations"] = []
             return state
 
@@ -570,7 +570,7 @@ class SubstitutionReco:
         is_processed_food = user_profile.get("is_processed_food", False)
         weight = user_profile.get("weight")
 
-        print("\n⚙️ [Sub-Reco] 대체 상품 추천 계산 중...")
+        print("\n[Sub-Reco] 대체 상품 추천 계산 중...")
         recos = self.generate_recommendations(
             state=state,
             candidates=candidates,
@@ -582,7 +582,7 @@ class SubstitutionReco:
         # 결과를 state에 저장
         state["sub_recommendations"] = recos
         state["next_step"] = "resp_agent"  # 다음으로 넘어갈 에이전트 지정
-        print(f"✅ [Sub-Reco] 대안 상품 추천 완료 (총 {len(recos)}개)")
+        print(f"[Sub-Reco] 대안 상품 추천 완료 (총 {len(recos)}개)")
         
         return state
 

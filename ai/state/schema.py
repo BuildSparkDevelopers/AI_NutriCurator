@@ -12,6 +12,8 @@ class overallState(TypedDict):
     user_id: str
     product_id: str
     name: str
+    user_profile: dict
+    product_data: dict
 
     # [User-Agent가 채워줄 정보]
     diabetes_flag: int
@@ -36,6 +38,7 @@ class overallState(TypedDict):
 
     allergy_safety_summary: str
     warniing : bool
+    threshold_checked: bool
 
     # [흐름 제어]
     next_step: str

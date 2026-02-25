@@ -5,6 +5,8 @@
 # # 중요:
 # # - /docs Authorize에는 토큰만 넣으면 됨 (HTTPBearer가 Bearer 자동)
 
+from contextlib import contextmanager
+
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -35,6 +37,17 @@ def get_db():
     yield from _get_db()
 
 
+@contextmanager
+def _session_scope():
+    from infra.db.session import SessionLocal
+
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 def get_repos(db=Depends(get_db)):
     from infra.db.repositories.user_repo import UserRepository
     from infra.db.repositories.health_repo import HealthProfileRepository
@@ -45,15 +58,21 @@ def get_auth_service(repos=Depends(get_repos)) -> AuthService:
     user_repo, _ = repos
     return AuthService(user_repo)
 
-def get_user_service(repos=Depends(get_repos)) -> UserService:
+def get_user_service():
     if _is_fake_mode():
         fake_db = load_fake_db()
         user_repo = FakeUserRepository(fake_db.get("users", {}))
         health_repo = FakeHealthProfileRepository(fake_db.get("users", {}))
-        return UserService(user_repo, health_repo)
+        yield UserService(user_repo, health_repo)
+        return
 
-    user_repo, health_repo = repos
-    return UserService(user_repo, health_repo)
+    from infra.db.repositories.user_repo import UserRepository
+    from infra.db.repositories.health_repo import HealthProfileRepository
+
+    with _session_scope() as db:
+        user_repo = UserRepository(db)
+        health_repo = HealthProfileRepository(db)
+        yield UserService(user_repo, health_repo)
 
 def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
@@ -81,23 +100,25 @@ def get_current_user_id(
 
     return int(sub)
 
-# ✅ product도 get_db로 통일
-def get_product_repo(db=Depends(get_db)):
+def get_product_repo():
     if _is_fake_mode():
         fake_db = load_fake_db()
-        return FakeProductRepository(fake_db.get("products", {}))
+        yield FakeProductRepository(fake_db.get("products", {}))
+        return
 
     from infra.db.repositories.product_repo import ProductRepository
 
-    return ProductRepository(db)
+    with _session_scope() as db:
+        yield ProductRepository(db)
 
 def get_product_service(repo=Depends(get_product_repo)) -> ProductService:
     return ProductService(repo)
 
-def get_cart_repo(db=Depends(get_db)):
+def get_cart_repo():
     from infra.db.repositories.cart_repo import CartRepository
 
-    return CartRepository(db)
+    with _session_scope() as db:
+        yield CartRepository(db)
 
 def get_cart_service(
     cart_repo=Depends(get_cart_repo),

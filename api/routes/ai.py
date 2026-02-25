@@ -45,39 +45,16 @@ def analyze(
                 detail="상품을 찾을 수 없습니다"
             )
         
-        # 3. Health Profile을 Flag 형식으로 변환
-        def convert_to_flag(value: str) -> int:
-            """질환 상태를 flag로 변환 (N/A 또는 없음 -> 0, 그 외 -> 1)"""
-            if not value or value.lower() in ["n/a", "none", ""]:
-                return 0
-            return 1
-        
-        diabetes_flag = convert_to_flag(health_profile.get("diabetes", "N/A"))
-        hypertension_flag = convert_to_flag(health_profile.get("hypertension", "N/A"))
-        kidneydisease_flag = convert_to_flag(health_profile.get("kidneydisease", "N/A"))
-        allergy_flag = convert_to_flag(health_profile.get("allergy", ""))
-        enriched_user_profile = {
-            **health_profile,
-            "diabetes_flag": diabetes_flag,
-            "hypertension_flag": hypertension_flag,
-            "kidneydisease_flag": kidneydisease_flag,
-            "allergy_flag": allergy_flag,
-        }
-        
-        # 4. Overall State 구성
+        # 3. Overall State 구성
+        # user_agent_node가 단일 기준으로 flag/final_profile을 계산하도록
+        # 초기 state에는 raw profile만 전달한다.
         overall_state = {
             "user_id": str(user_id),
             "product_id": str(req.product_id),
             "name": product_detail.get("name", ""),
-            "user_profile": enriched_user_profile,
+            "user_profile": health_profile,
             "product_data": product_detail,
-            
-            # 건강 정보
-            "diabetes_flag": diabetes_flag,
-            "hypertension_flag": hypertension_flag,
-            "kidneydisease_flag": kidneydisease_flag,
-            "allergy_flag": allergy_flag,
-            
+
             # 분석 결과 (초기값)
             "any_exceed": False,
             "any_allergen": False,
@@ -86,13 +63,13 @@ def analyze(
             "final_answer": ""
         }
         
-        # 5. Orchestrator 정책 실행 -> 이제 전체 LangGraph 파이프라인(graph.py)을 실행합니다.
+        # 4. Orchestrator 정책 실행 -> 이제 전체 LangGraph 파이프라인(graph.py)을 실행합니다.
         app = compile_graph()
         
         # 그래프 실행. 전체 노드를 순회하고 최종 상태(Dict)를 받습니다.
         final_state = app.invoke(overall_state)
         
-        # 6. 결과 구성 (LangGraph 최종 state 기반)
+        # 5. 결과 구성 (LangGraph 최종 state 기반)
         decision = "safe"  # 기본값
         reason_summary = final_state.get("final_answer", "")
         raw_alternatives = final_state.get("sub_recommendations", [])

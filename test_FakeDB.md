@@ -1,109 +1,3 @@
-# test_FakeDB 작업 기록
-
-## 목적
-
-LangGraph가 FakeDB로 동작 가능한지 점검하고, 필요한 수정 포인트를 문서화한다.
-
----
-
-## 1) 1차 분석 결과
-
-초기 분석 시점 기준으로 다음 문제가 확인되었다.
-
-1. `langgraph` import 실패 가능
-   - 실행 환경에서 `langgraph` 미설치 시 `ModuleNotFoundError` 발생
-2. `reco_agent` import 단계 오류
-   - 파일 하단 실행 코드/전역 참조(`FAKE_DB`)로 인해 import 시점 실패 가능
-3. 그래프 wiring 불일치
-   - `graph.py`가 참조하는 클래스/노드와 실제 구현 정합성 부족
-4. 데이터 소스 분기 부재
-   - `api/deps.py`가 Postgres 경로를 고정 사용
-5. state 계약 불일치 가능성
-   - `*_flag`, `final_profile`, `candidates` 등 키 사용이 에이전트별로 불균일
-
----
-
-## 2) 수행했던 코드 작업 (이후 워킹트리 정리됨)
-
-다음 변경을 실제로 적용하고 문법 점검까지 수행했었다.
-
-### A. FakeDB 분기 및 로더 추가
-
-- `app/settings.py`
-  - `AI_DATA_SOURCE` 설정 필드 추가 (`postgres` / `fake`)
-- `api/deps.py`
-  - `get_user_service`, `get_product_service`에 fake/postgres 분기 추가
-- 신규 파일
-  - `infra/db/fake_data.py` (FAKE_DB 로더)
-  - `infra/db/repositories/fake_user_repo.py`
-  - `infra/db/repositories/fake_health_repo.py`
-  - `infra/db/repositories/fake_product_repo.py`
-
-### B. LangGraph 노드 정합성 보완
-
-- `ai/orchestrator/graph.py`
-  - fake 데이터 주입 기반으로 에이전트 초기화 정리
-  - 오케스트레이터 노드 래핑(`next_step` 반환)
-  - 노드/엣지 연결 구조 정리
-- `ai/orchestrator/policy.py`
-  - `threshold_checked` 기준 추가로 chat loop 방지
-- `ai/agents/chat_core_agent.py`
-  - `evaluate_threshold`에서 `threshold_checked = True` 세팅
-
-### C. API state 보강
-
-- `api/routes/ai.py`
-  - `user_profile`에 `diabetes_flag`, `hypertension_flag`, `kidneydisease_flag`, `allergy_flag` 보강
-
-### D. 문법/린트 점검
-
-- `py_compile` 기반 문법 점검 수행
-- 변경 파일 대상 lints 점검 수행
-
----
-
-## 3) 작업 중 확인된 이슈
-
-`ai/agents/user_agent.py`는 과거 코드가 중복 삽입된 상태로 보였고,
-정리 과정에서 파일 충돌 가능성이 높아 대체 모듈(`user_agent_node.py`) 경로로 우회 적용했었다.
-
----
-
-## 4) 워킹트리 정리 이력 (완료)
-
-사용자 요청에 따라 워킹트리를 정리했다.
-
-- 실행:
-  - `git reset --hard HEAD`
-  - `git clean -fd`
-- 결과:
-  - 모든 로컬 수정/추가 파일 제거
-  - `git status --short` 기준 clean 상태 확인
-
-즉, 위 2번 항목의 코드 변경은 **현재 저장소에는 남아있지 않다**.
-
----
-
-## 5) 현재 상태 요약
-
-현재 저장소는 clean 상태이며, FakeDB 적용 코드는 반영되어 있지 않다.  
-다시 진행하려면 아래 순서로 재적용하면 된다.
-
-1. `AI_DATA_SOURCE` 설정 추가
-2. FakeDB 로더 + fake repositories 추가
-3. `api/deps.py` 분기 적용
-4. `graph.py` 및 policy/chat state 흐름 정합화
-5. import/컴파일/E2E 검증
-
----
-
-## 6) 재적용 시 권장 체크리스트
-
-- [ ] `python -c "import langgraph"` 성공
-- [ ] `python -c "from ai.orchestrator.graph import compile_graph; compile_graph()"` 성공
-- [ ] fake 모드(`AI_DATA_SOURCE=fake`)에서 `/api/v1/ai/analyze` 응답 확인
-- [ ] 응답의 `full_state_debug`에 `next_step`, `sub_recommendations`, `final_answer` 확인
-
 # LangGraph FakeDB 동작 점검 정리
 
 ## 목적
@@ -226,7 +120,7 @@ LangGraph가 FakeDB로 동작 가능한지 점검하고, 필요한 수정 포인
   - `print(...)`
 - LangGraph 노드 계약 함수(`run(state)->state`) 중심으로 재구성
 
-### `ai/agents/user_agent.py`
+### `ai/agents/user_agent_node.py`
 
 - 하단 예제 실행 코드 제거
 - 반환 키를 `overallState`와 통일
@@ -257,18 +151,18 @@ LangGraph가 FakeDB로 동작 가능한지 점검하고, 필요한 수정 포인
 2. FakeDB 로더 + Fake repo/service 계층 추가
 3. `api/deps.py`에 데이터 소스 분기 구현
 4. `graph.py` import/노드 wiring 정리
-5. `reco_agent`, `user_agent` 모듈 하단 실행 코드 제거
+5. `reco_agent`, `user_agent_node` 모듈 하단 실행 코드 제거
 6. state 계약 통일 후 `/api/v1/ai/analyze` E2E 검증
 
 ---
 
 ## 5) 검증 체크리스트
 
-- [ ] `python -c "from ai.orchestrator.graph import compile_graph; compile_graph()"`
-- [ ] `python -c "import ai.agents.reco_agent"` import 에러 없음
-- [ ] `python -c "import ai.agents.user_agent_node"` import 에러 없음
-- [ ] fake 모드에서 `/api/v1/ai/analyze` 호출 시 DB 연결 없이 응답 반환
-- [ ] 응답 내 `full_state_debug`에 `candidates`, `sub_recommendations`, `final_answer` 기대값 포함
+- [x] `python -c "from ai.orchestrator.graph import compile_graph; compile_graph()"`
+- [x] `python -c "import ai.agents.reco_agent"` import 에러 없음
+- [x] `python -c "import ai.agents.user_agent_node"` import 에러 없음
+- [x] fake 모드에서 `/api/v1/ai/analyze` 호출 시 DB 연결 없이 응답 반환
+- [x] 응답 내 `full_state_debug`에 `candidates`, `sub_recommendations`, `final_answer` 기대값 포함
 
 ---
 

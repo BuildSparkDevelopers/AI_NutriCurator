@@ -10,6 +10,16 @@ class EvidenceGeneration:
         self.final_profiles = final_profiles if final_profiles is not None else {}
         self.products = products if products is not None else {}
 
+    def _resolve_product(self, product_id: str) -> dict:
+        # products dict key(0,1,2...)와 product_id 값이 다른 구조를 둘 다 지원
+        direct = self.products.get(str(product_id))
+        if isinstance(direct, dict) and direct:
+            return direct
+        for product in self.products.values():
+            if str(product.get("product_id")) == str(product_id):
+                return product
+        return {}
+
 # 1. 당뇨, 고혈압, 신부전 분석
     def evaluate_threshold(self, state: dict) -> dict:
         """
@@ -20,7 +30,7 @@ class EvidenceGeneration:
         
         # profile은 final_profile을 우선적으로 가져오고, 없으면 ID로 조회
         profile = state.get("final_profile", self.final_profiles.get(str(user_id), {}))
-        product = self.products.get(str(product_id), {})
+        product = self._resolve_product(product_id)
 
         # 결과 저장소 초기화 (기존 state 보존)
         state["any_exceed"] = False
