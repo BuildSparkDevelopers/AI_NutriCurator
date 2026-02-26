@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator 
 
 
 class ProductSummary(BaseModel):
@@ -13,6 +13,13 @@ class ProductSummary(BaseModel):
     brand: Optional[str] = None
     price: Optional[int] = None
     image_url: Optional[str] = None
+    @field_validator("image_url")
+    @classmethod
+    def normalize_image_url(cls, v: Optional[str]):
+        if not v:
+            return v
+        return v.replace("http://www.haccp.or.kr/", "https://www.haccp.or.kr/")
+    
 
 
 class ProductListResponse(BaseModel):
@@ -30,6 +37,12 @@ class ProductDetailResponse(BaseModel):
     price: Optional[int] = None
     image_url: Optional[str] = None
     description: Optional[str] = None
+    @field_validator("image_url")
+    @classmethod
+    def normalize_image_url(cls, v: Optional[str]):
+        if not v:
+            return v
+        return v.replace("http://www.haccp.or.kr/", "https://www.haccp.or.kr/")
 
     ingredients: List[str] = Field(default_factory=list)
     allergy: Optional[str] = None
