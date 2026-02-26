@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "cdn.example.com" },
       { protocol: "https", hostname: "picsum.photos" },
       { protocol: "https", hostname: "via.placeholder.com" },
+
+      // ✅ 추가
+      { protocol: "https", hostname: "www.haccp.or.kr" },
     ],
   },
   async rewrites() {
