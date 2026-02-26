@@ -90,7 +90,7 @@ class ProductRepository:
     
     def get_by_id(self, product_id: str) -> Optional[dict]:
         pid = self._parse_product_id(product_id)
-        stmt = select(Product).where(Product.product_id == pid)
+        stmt = select(Product).where(Product.product_id == pid)   
         p = self.db.execute(stmt).scalars().first()
         if not p:
             return None
