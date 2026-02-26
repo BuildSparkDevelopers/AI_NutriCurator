@@ -5,7 +5,7 @@
 
 ## Team BuildSparkDevelopers
 
-팀장: 소형선 이영주 박수빈
+팀장: 소형선 이영주
 
 ## 🚀 주요 기능
 
@@ -314,4 +314,5 @@ Logic :
 
 
 #
+
 
