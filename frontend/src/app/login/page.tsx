@@ -142,9 +142,9 @@ export default function LoginPage() {
 
         <div className="mt-8 p-4 bg-gray-100 rounded-lg">
           <p className="text-xs text-gray-400 text-center leading-relaxed">
-            테스트 계정: 아무 이메일/비밀번호 입력 후 로그인
+            실제 계정으로 로그인해주세요
             <br />
-            (Mock 데이터 기반으로 동작합니다)
+            (백엔드 API 인증을 사용합니다)
           </p>
         </div>
       </motion.div>

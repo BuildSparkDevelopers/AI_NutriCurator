@@ -1,41 +1,86 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Banner from "@/components/Banner";
+import CategoryNav from "@/components/CategoryNav";
+import ProductCard from "@/components/ProductCard";
+import { Product } from "@/lib/types";
+import { fetchProducts } from "@/lib/products-api";
 
 export default function MainPage() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
+    let isCancelled = false;
+
+    async function loadProducts() {
+      setIsLoading(true);
+      setError(null);
       try {
-        const res = await fetch("/api/v1/products");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        // ✅ 너희 API 스키마에 맞는 정답
-        setProducts(Array.isArray(data?.items) ? data.items : []);
-      } catch (e) {
-        console.error(e);
-        setProducts([]);
+        const { items } = await fetchProducts({
+          categoryId: selectedCategory,
+          limit: 40,
+          offset: 0,
+        });
+        if (!isCancelled) setProducts(items);
+      } catch (err) {
+        if (!isCancelled) {
+          const message =
+            err instanceof Error ? err.message : "상품을 불러오는 중 오류가 발생했습니다.";
+          setError(message);
+          setProducts([]);
+        }
       } finally {
-        setLoading(false);
+        if (!isCancelled) setIsLoading(false);
       }
-    })();
-  }, []);
+    }
 
-  const recommendedProducts = useMemo(() => {
-    return [...products]
-      .sort((a, b) => (b.discount_rate ?? 0) - (a.discount_rate ?? 0))
-      .slice(0, 4);
-  }, [products]);
+    loadProducts();
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedCategory]);
 
-  if (loading) return <div className="p-6 text-gray-400">로딩중...</div>;
+  return (
+    <div className="mx-auto max-w-[1050px] px-4 py-6">
+      <Banner />
 
-  // ✅ 비었을 때 안내 UI (지금 같은 상황에서 필수)
-  if (products.length === 0) {
-    return <div className="p-6 text-gray-400">상품 데이터가 없습니다. DB seed/복구가 필요합니다.</div>;
-  }
+      <section className="mb-10">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-700 mb-2">
+          뉴큐 추천 상품
+        </h2>
+        <p className="text-sm text-gray-400 mb-6">
+          AI 건강 분석이 가능한 식품을 카테고리별로 확인해보세요.
+        </p>
 
-  return <div>{/* ...기존 렌더... */}</div>;
+        <CategoryNav
+          selectedCategory={selectedCategory}
+          onSelect={setSelectedCategory}
+        />
+
+        {isLoading ? (
+          <div className="py-16 text-center text-gray-400">상품을 불러오는 중입니다...</div>
+        ) : error ? (
+          <div className="py-16 text-center text-warn-red">{error}</div>
+        ) : products.length === 0 ? (
+          <div className="py-16 text-center text-gray-400">
+            선택한 카테고리의 상품이 없습니다.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            {products.map((product, index) => (
+              <ProductCard
+                key={product.product_id}
+                product={product}
+                index={index}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }

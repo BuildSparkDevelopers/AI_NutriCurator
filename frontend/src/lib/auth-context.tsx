@@ -35,34 +35,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const mockUser: User = {
-  user_id: 101,
-  email: "user101@example.com",
-  created_at: "2026-02-20T10:15:30+09:00",
-  updated_at: "2026-02-20T10:15:30+09:00",
-  is_sensitive_agreed: true,
-  agreed_at: "2026-02-20 10:14:55",
-  is_tos_agreed: true,
-  is_privacy_agreed: true,
-};
-
-const mockHealthProfile: UserHealthProfile = {
-  user_id: 101,
-  gender: "F",
-  birth_date: "1995-07-12 00:00:00",
-  height: 165.3,
-  weight: 58.75,
-  average_of_steps: 8421,
-  activity_level: "3~4회",
-  diabetes: "N/A",
-  hypertension: "prehypertension",
-  kidneydisease: "N/A",
-  allergy: "Peanut",
-  notes: "가벼운 운동 권장, 저염식 선호",
-  favorite: "매운 음식",
-  goal: "다이어트",
-};
-
 function loadStoredAuth(): {
   user: User | null;
   healthProfile: UserHealthProfile | null;
@@ -77,11 +49,13 @@ function loadStoredAuth(): {
       healthProfile: UserHealthProfile;
       token: string;
     };
-    return {
-      user: parsed.user ?? null,
-      healthProfile: parsed.healthProfile ?? null,
-      token: parsed.token ?? null,
-    };
+    const token = parsed.token ?? null;
+    // stale mock token/session cleanup
+    if (!token || token.endsWith(".mock_signature")) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      return { user: null, healthProfile: null, token: null };
+    }
+    return { user: parsed.user ?? null, healthProfile: parsed.healthProfile ?? null, token };
   } catch {
     return { user: null, healthProfile: null, token: null };
   }
@@ -90,7 +64,7 @@ function loadStoredAuth(): {
 function saveAuth(user: User | null, healthProfile: UserHealthProfile | null, token: string | null = null) {
   if (typeof window === "undefined") return;
   try {
-    if (!user || !healthProfile) {
+    if (!user || !token) {
       localStorage.removeItem(AUTH_STORAGE_KEY);
     } else {
       localStorage.setItem(
@@ -101,6 +75,54 @@ function saveAuth(user: User | null, healthProfile: UserHealthProfile | null, to
   } catch {}
 }
 
+function parseJwtSub(token: string): number | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = payload + "=".repeat((4 - (payload.length % 4)) % 4);
+    const parsed = JSON.parse(atob(padded));
+    const sub = Number(parsed?.sub);
+    return Number.isFinite(sub) ? sub : null;
+  } catch {
+    return null;
+  }
+}
+
+function toUser(userId: number, email: string): User {
+  const now = new Date().toISOString();
+  return {
+    user_id: userId,
+    email,
+    created_at: now,
+    updated_at: now,
+    is_sensitive_agreed: false,
+    agreed_at: now.slice(0, 19).replace("T", " "),
+    is_tos_agreed: true,
+    is_privacy_agreed: true,
+  };
+}
+
+function toHealthProfile(raw: Record<string, unknown> | null, userId: number): UserHealthProfile | null {
+  if (!raw) return null;
+  return {
+    user_id: userId,
+    gender: String(raw.gender ?? ""),
+    birth_date: String(raw.birth_date ?? ""),
+    height: Number(raw.height ?? 0),
+    weight: Number(raw.weight ?? 0),
+    average_of_steps: Number(raw.average_of_steps ?? 0),
+    activity_level: String(raw.activity_level ?? ""),
+    diabetes: String(raw.diabetes ?? ""),
+    hypertension: String(raw.hypertension ?? ""),
+    kidneydisease: String(raw.kidneydisease ?? ""),
+    allergy: Array.isArray(raw.allergy) ? raw.allergy.join(", ") : String(raw.allergy ?? ""),
+    notes: String(raw.notes ?? ""),
+    favorite: String(raw.favorite ?? ""),
+    goal: String(raw.goal ?? ""),
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [healthProfile, setHealthProfile] =
@@ -109,95 +131,141 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { user: u, healthProfile: h, token: t } = loadStoredAuth();
-    if (u && h) {
+    if (u && t) {
       setUser(u);
       setHealthProfile(h);
       setToken(t);
     }
   }, []);
 
-  const generateMockToken = (userId: number): string => {
-    // Mock JWT 토큰 생성 (실제로는 백엔드에서 제공해야 함)
-    const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-    const payload = btoa(JSON.stringify({ sub: userId, iat: Date.now() }));
-    const signature = "mock_signature";
-    return `${header}.${payload}.${signature}`;
-  };
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      const loginRes = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: email, password }),
+      });
+      if (!loginRes.ok) return false;
 
-  const login = useCallback(async (email: string, _password: string) => {
-    if (email) {
-      const newUser = { ...mockUser, email };
-      const newToken = generateMockToken(newUser.user_id);
-      setUser(newUser);
-      setHealthProfile(mockHealthProfile);
-      setToken(newToken);
-      saveAuth(newUser, mockHealthProfile, newToken);
+      const loginData = await loginRes.json();
+      const accessToken = loginData?.access_token;
+      if (typeof accessToken !== "string" || !accessToken) return false;
+
+      const userId = parseJwtSub(accessToken);
+      if (!userId) return false;
+
+      let profile: UserHealthProfile | null = null;
+      try {
+        const profileRes = await fetch("/api/v1/users/me/profile", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          profile = toHealthProfile(profileData?.profile ?? null, userId);
+        }
+      } catch {}
+
+      const nextUser = toUser(userId, email);
+      setUser(nextUser);
+      setHealthProfile(profile);
+      setToken(accessToken);
+      saveAuth(nextUser, profile, accessToken);
       return true;
+    } catch {
+      return false;
     }
-    return false;
   }, []);
 
   const signup = useCallback(
     async (
       email: string,
-      _password: string,
+      password: string,
       healthData?: SignupHealthData,
     ) => {
-      if (!email) return false;
-      const now = new Date().toISOString();
-      const newUser = {
-        user_id: 102,
-        email,
-        created_at: now,
-        updated_at: now,
-        is_sensitive_agreed:
-          !!healthData?.allergy?.length ||
-          !!healthData?.diabetes ||
-          !!healthData?.hypertension ||
-          !!healthData?.kidneydisease,
-        agreed_at: now.slice(0, 19).replace("T", " "),
-        is_tos_agreed: true,
-        is_privacy_agreed: true,
-      };
-      const newProfile = {
-        user_id: 102,
-        gender: "",
-        birth_date: "",
-        height: 0,
-        weight: 0,
-        average_of_steps: 0,
-        activity_level: "",
-        diabetes: healthData?.diabetes || "N/A",
-        hypertension: healthData?.hypertension || "N/A",
-        kidneydisease: healthData?.kidneydisease || "N/A",
-        allergy: healthData?.allergy?.join(", ") || "",
-        notes: "",
-        favorite: "",
-        goal: "",
-      };
-      const newToken = generateMockToken(newUser.user_id);
-      setUser(newUser);
-      setHealthProfile(newProfile);
-      setToken(newToken);
-      saveAuth(newUser, newProfile, newToken);
-      return true;
+      try {
+        const signupRes = await fetch("/api/v1/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: email,
+            password,
+            is_tos_agreed: true,
+            is_privacy_agreed: true,
+            is_sensitive_agreed:
+              !!healthData?.allergy?.length ||
+              !!healthData?.diabetes ||
+              !!healthData?.hypertension ||
+              !!healthData?.kidneydisease,
+          }),
+        });
+        if (!signupRes.ok) return false;
+
+        const signupData = await signupRes.json();
+        const accessToken = signupData?.access_token;
+        if (typeof accessToken !== "string" || !accessToken) return false;
+
+        const userId = parseJwtSub(accessToken);
+        if (!userId) return false;
+
+        if (healthData && (healthData.diabetes || healthData.hypertension || healthData.kidneydisease || healthData.allergy?.length)) {
+          await fetch("/api/v1/users/me/profile", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              diabetes: healthData.diabetes,
+              hypertension: healthData.hypertension,
+              kidneydisease: healthData.kidneydisease,
+              allergy: healthData.allergy,
+            }),
+          });
+        }
+
+        let profile: UserHealthProfile | null = null;
+        try {
+          const profileRes = await fetch("/api/v1/users/me/profile", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            profile = toHealthProfile(profileData?.profile ?? null, userId);
+          }
+        } catch {}
+
+        const nextUser = toUser(userId, email);
+        setUser(nextUser);
+        setHealthProfile(profile);
+        setToken(accessToken);
+        saveAuth(nextUser, profile, accessToken);
+        return true;
+      } catch {
+        return false;
+      }
     },
     [],
   );
 
   const logout = useCallback(() => {
+    if (token) {
+      fetch("/api/v1/auth/logout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => undefined);
+    }
     setUser(null);
     setHealthProfile(null);
     setToken(null);
     saveAuth(null, null, null);
-  }, []);
+  }, [token]);
 
   return (
     <AuthContext.Provider
       value={{
         user,
         healthProfile,
-        isLoggedIn: !!user,
+        isLoggedIn: !!user && !!token,
         token,
         login,
         signup,

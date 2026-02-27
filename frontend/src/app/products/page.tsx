@@ -1,71 +1,75 @@
-// src/app/products/page.tsx
-import Image from "next/image";
-import Link from "next/link";
+"use client";
 
-type Product = {
-  product_id: number;
-  name: string;
-  brand?: string | null;
-  price?: number | null;
-  image_url?: string | null;
-};
+import { useEffect, useState } from "react";
+import CategoryNav from "@/components/CategoryNav";
+import ProductCard from "@/components/ProductCard";
+import { Product } from "@/lib/types";
+import { fetchProducts } from "@/lib/products-api";
 
-type ProductListResponse = {
-  total: number;
-  limit: number;
-  offset: number;
-  items: Product[];
-};
+export default function ProductsPage() {
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-async function getProducts(): Promise<ProductListResponse> {
-  const res = await fetch("/api/v1/products?limit=20&offset=0", { cache: "no-store" });
-  if (!res.ok) throw new Error(`Failed to fetch products: ${res.status}`);
-  return res.json();
-}
+  useEffect(() => {
+    let isCancelled = false;
 
-export default async function ProductsPage() {
-  const data = await getProducts();
+    async function loadProducts() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { items } = await fetchProducts({
+          categoryId: selectedCategory,
+          limit: 60,
+          offset: 0,
+        });
+        if (!isCancelled) setProducts(items);
+      } catch (err) {
+        if (!isCancelled) {
+          const message =
+            err instanceof Error ? err.message : "상품을 불러오는 중 오류가 발생했습니다.";
+          setError(message);
+          setProducts([]);
+        }
+      } finally {
+        if (!isCancelled) setIsLoading(false);
+      }
+    }
+
+    loadProducts();
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedCategory]);
 
   return (
-    <main style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Products</h1>
+    <div className="mx-auto max-w-[1050px] px-4 py-8">
+      <h1 className="text-2xl font-bold text-gray-700 mb-2">전체 상품</h1>
+      <p className="text-sm text-gray-400 mb-6">
+        카테고리를 선택해서 원하는 상품을 빠르게 찾아보세요.
+      </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
-        {data.items.map((p) => (
-          <Link
-            key={p.product_id}
-            href={`/products/${p.product_id}`}
-            style={{
-              display: "block",
-              border: "1px solid #eee",
-              borderRadius: 12,
-              overflow: "hidden",
-              textDecoration: "none",
-              color: "inherit",
-            }}
-          >
-            <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 5", background: "#f5f5f5" }}>
-              {p.image_url ? (
-                <Image
-                  src={p.image_url}
-                  alt={p.name}
-                  fill
-                  style={{ objectFit: "cover" }}
-                  sizes="(max-width: 768px) 50vw, 25vw"
-                />
-              ) : null}
-            </div>
+      <CategoryNav
+        selectedCategory={selectedCategory}
+        onSelect={setSelectedCategory}
+      />
 
-            <div style={{ padding: 12 }}>
-              <div style={{ fontSize: 12, opacity: 0.6 }}>{p.brand ?? ""}</div>
-              <div style={{ fontSize: 14, fontWeight: 600, marginTop: 6 }}>{p.name}</div>
-              <div style={{ fontSize: 14, marginTop: 8 }}>
-                {p.price != null ? `${p.price.toLocaleString()}원` : ""}
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </main>
+      {isLoading ? (
+        <div className="py-16 text-center text-gray-400">상품을 불러오는 중입니다...</div>
+      ) : error ? (
+        <div className="py-16 text-center text-warn-red">{error}</div>
+      ) : products.length === 0 ? (
+        <div className="py-16 text-center text-gray-400">
+          선택한 카테고리의 상품이 없습니다.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          {products.map((product, index) => (
+            <ProductCard key={product.product_id} product={product} index={index} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

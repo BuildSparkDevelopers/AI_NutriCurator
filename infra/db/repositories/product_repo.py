@@ -38,21 +38,21 @@ class ProductRepository:
 
     def _to_summary_dict(self, p: Product) -> Dict[str, Any]:
         return {
-            "product_id": str(p.product_id),
+            "product_id": int(p.product_id),
             "name": p.name,
             "category": None,   # category join 전이라 None
             "brand": p.brand,
-            "price": None,      # DB에 price 없음
+            "price": p.price,
             "image_url": p.image_url,
         }
 
     def _to_detail_dict(self, p: Product) -> Dict[str, Any]:
         return {
-            "product_id": str(p.product_id),
+            "product_id": int(p.product_id),
             "name": p.name,
             "category": None,
             "brand": p.brand,
-            "price": None,
+            "price": p.price,
             "image_url": p.image_url,
             "description": None,
 
@@ -111,7 +111,7 @@ class ProductRepository:
 
         # category: 숫자면 category_id로 필터 (현재 DB 스펙 기준)
         if category and category.isdigit():
-            filters.append(Product.category_id == int(category))
+            filters.append(Product.category_id == category)
 
         # 검색어: name/brand
         if q:

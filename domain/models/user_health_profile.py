@@ -72,7 +72,7 @@ class UserHealthProfile(Base):
         primary_key=True,
     )
 
-    gender: Mapped[Gender | None] = mapped_column(Enum(Gender, name="gender_enum"), nullable=True)
+    gender: Mapped[Gender | None] = mapped_column(Enum(Gender, name="gender"), nullable=True)
     birth_date: Mapped["Date | None"] = mapped_column(Date, nullable=True)
 
     height: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
@@ -84,11 +84,11 @@ class UserHealthProfile(Base):
     # 일단 String으로 두는 게 편함 (0, 1_2, 3_4, 5_7 등)
     activity_level: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
-    diabetes: Mapped[Diabetes | None] = mapped_column(Enum(Diabetes, name="diabetes_enum"), nullable=True)
-    hypertension: Mapped[Hypertension | None] = mapped_column(Enum(Hypertension, name="hypertension_enum"), nullable=True)
-    kidneydisease: Mapped[KidneyDisease | None] = mapped_column(Enum(KidneyDisease, name="kidneydisease_enum"), nullable=True)
+    diabetes: Mapped[Diabetes | None] = mapped_column(Enum(Diabetes, name="diabetes"), nullable=True)
+    hypertension: Mapped[Hypertension | None] = mapped_column(Enum(Hypertension, name="hypertension"), nullable=True)
+    kidneydisease: Mapped[KidneyDisease | None] = mapped_column(Enum(KidneyDisease, name="kidneydisease"), nullable=True)
     allergy: Mapped[list[Allergy]] = mapped_column(
-        ARRAY(Enum(Allergy, name="allergy_enum")),
+        ARRAY(Enum(Allergy, name="allergy")),
         nullable=False,
         default=list,
         server_default="{}",

@@ -97,8 +97,33 @@ def get_current_user_id(
     sub = payload.get("sub")
     if not sub:
         raise HTTPException(status_code=401, detail="INVALID_TOKEN")
+    try:
+        user_id = int(sub)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="INVALID_TOKEN")
 
-    return int(sub)
+    if _is_fake_mode():
+        fake_db = load_fake_db()
+        users = fake_db.get("users", {})
+        exists = False
+        for value in users.values():
+            try:
+                if int(value.get("user_id", -1)) == user_id:
+                    exists = True
+                    break
+            except (TypeError, ValueError):
+                continue
+        if not exists:
+            raise HTTPException(status_code=401, detail="실제 사용자로 존재하지 않으면 회원가입이 필요합니다")
+        return user_id
+
+    from infra.db.repositories.user_repo import UserRepository
+
+    with _session_scope() as db:
+        user_repo = UserRepository(db)
+        if user_repo.get_by_id(user_id) is None:
+            raise HTTPException(status_code=401, detail="실제 사용자로 존재하지 않으면 회원가입이 필요합니다")
+    return user_id
 
 def get_product_repo():
     if _is_fake_mode():

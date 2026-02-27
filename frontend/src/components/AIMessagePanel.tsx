@@ -50,14 +50,14 @@ const decisionConfig: Record<Decision, { icon: typeof ShieldCheck; color: string
 };
 
 export default function AIMessagePanel({ productId, productName }: AIMessagePanelProps) {
-  const { isLoggedIn, token } = useAuth();
+  const { isLoggedIn, token, logout } = useAuth();
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [expanded, setExpanded] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const handleAnalyze = async () => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !token) {
       window.location.href = "/login";
       return;
     }
@@ -79,7 +79,11 @@ export default function AIMessagePanel({ productId, productName }: AIMessagePane
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          logout();
+          throw new Error("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
+        }
         throw new Error(errorData.detail || "분석 중 오류가 발생했습니다");
       }
 
@@ -93,7 +97,7 @@ export default function AIMessagePanel({ productId, productName }: AIMessagePane
         const keywords = alt.reason ?? "";
         const product = pid ? getProductById(Number(pid)) : null;
         const image = alt.image_url ?? product?.image_url ?? "https://picsum.photos/seed/placeholder/400/400";
-        return [image, name || product?.name ?? "상품", keywords || undefined, pid ? Number(pid) : undefined];
+        return [image, name || product?.name || "상품", keywords || undefined, pid ? Number(pid) : undefined];
       });
 
       setResult({

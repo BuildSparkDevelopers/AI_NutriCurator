@@ -12,6 +12,7 @@ from app.security import (
 )
 from app.settings import settings
 
+import re
 
 class AuthService:
     def __init__(self, user_repo):
@@ -26,7 +27,11 @@ class AuthService:
         is_privacy_agreed: bool,
         is_sensitive_agreed: bool,
     ) -> dict:
-        validate_username(username)
+        if "@" in username:
+            if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", username):
+                raise ValueError("USERNAME_FORMAT_INVALID")
+        else:
+            validate_username(username)
         validate_password(password)
 
         if not is_tos_agreed:

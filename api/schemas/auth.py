@@ -3,8 +3,8 @@
 from pydantic import BaseModel, Field
 
 class SignupRequest(BaseModel):
-    username: str = Field(min_length=4, max_length=20)
-    password: str = Field(min_length=10, max_length=72)
+    username: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=72)
 
     is_tos_agreed: bool
     is_privacy_agreed: bool

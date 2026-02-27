@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,7 +19,12 @@ import AIMessagePanel from "@/components/AIMessagePanel";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
-import { getProductById, getCategoryById, products, formatPrice } from "@/lib/mock-data";
+import { Product } from "@/lib/types";
+import { fetchProductDetail, fetchProducts } from "@/lib/products-api";
+
+function formatPrice(price: number): string {
+  return price.toLocaleString("ko-KR");
+}
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -27,8 +32,76 @@ export default function ProductDetailPage() {
   const { addItem } = useCart();
   const { isLoggedIn } = useAuth();
   const [addedToast, setAddedToast] = useState(false);
-  const productId = Number(params.id);
-  const product = getProductById(productId);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const productId = Number(Array.isArray(params.id) ? params.id[0] : params.id);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadDetail() {
+      if (!Number.isFinite(productId) || productId <= 0) {
+        setLoadError("상품을 찾을 수 없습니다");
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setLoadError(null);
+      try {
+        const detail = await fetchProductDetail(productId);
+        if (!isCancelled) setProduct(detail);
+      } catch (err) {
+        if (!isCancelled) {
+          const message =
+            err instanceof Error && err.message === "NOT_FOUND"
+              ? "상품을 찾을 수 없습니다"
+              : "상품 상세를 불러오는 중 오류가 발생했습니다";
+          setLoadError(message);
+          setProduct(null);
+        }
+      } finally {
+        if (!isCancelled) setIsLoading(false);
+      }
+    }
+
+    loadDetail();
+    return () => {
+      isCancelled = true;
+    };
+  }, [productId]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadRelated() {
+      if (!product?.brand) {
+        setRelatedProducts([]);
+        return;
+      }
+
+      try {
+        const { items } = await fetchProducts({
+          q: product.brand,
+          limit: 8,
+          offset: 0,
+        });
+        if (isCancelled) return;
+        setRelatedProducts(
+          items.filter((item) => item.product_id !== product.product_id).slice(0, 4),
+        );
+      } catch {
+        if (!isCancelled) setRelatedProducts([]);
+      }
+    }
+
+    loadRelated();
+    return () => {
+      isCancelled = true;
+    };
+  }, [product?.brand, product?.product_id]);
 
   const handleAddToCart = () => {
     if (!isLoggedIn) {
@@ -41,21 +114,18 @@ export default function ProductDetailPage() {
     setTimeout(() => setAddedToast(false), 2500);
   };
 
-  const relatedProducts = useMemo(() => {
-    if (!product) return [];
-    return products
-      .filter(
-        (p) =>
-          p.category_id === product.category_id &&
-          p.product_id !== product.product_id,
-      )
-      .slice(0, 4);
-  }, [product]);
-
-  if (!product) {
+  if (isLoading) {
     return (
       <div className="mx-auto max-w-[1050px] px-4 py-20 text-center">
-        <p className="text-lg text-gray-400">상품을 찾을 수 없습니다</p>
+        <p className="text-lg text-gray-400">상품 정보를 불러오는 중입니다...</p>
+      </div>
+    );
+  }
+
+  if (!product || loadError) {
+    return (
+      <div className="mx-auto max-w-[1050px] px-4 py-20 text-center">
+        <p className="text-lg text-gray-400">{loadError ?? "상품을 찾을 수 없습니다"}</p>
         <Link
           href="/"
           className="inline-block mt-4 text-sm text-primary hover:underline"
@@ -66,7 +136,6 @@ export default function ProductDetailPage() {
     );
   }
 
-  const category = getCategoryById(product.category_id);
   const { nutrition } = product;
 
   const nutrientRows = [
@@ -93,7 +162,7 @@ export default function ProductDetailPage() {
           홈
         </Link>
         <ChevronRight size={12} />
-        <span>{category?.name || "카테고리"}</span>
+        <span>{product.category || "카테고리"}</span>
         <ChevronRight size={12} />
         <span className="text-gray-600">{product.name}</span>
       </motion.nav>

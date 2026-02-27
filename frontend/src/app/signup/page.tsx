@@ -9,44 +9,53 @@ import { useAuth } from "@/lib/auth-context";
 
 const DIABETES_OPTIONS = [
   { value: "", label: "해당없음" },
-  { value: "1형", label: "1형" },
-  { value: "2형", label: "2형" },
+  { value: "type1", label: "1형" },
+  { value: "type2", label: "2형" },
+  { value: "pre_type1", label: "전단계 1형" },
+  { value: "pre_type2", label: "전단계 2형" },
+  { value: "na", label: "모름/해당없음(na)" },
 ];
 
 const HYPERTENSION_OPTIONS = [
   { value: "", label: "해당없음" },
-  { value: "정상", label: "정상" },
-  { value: "전단계", label: "전단계" },
-  { value: "고혈압", label: "고혈압" },
+  { value: "prehypertension", label: "전단계" },
+  { value: "stage1", label: "고혈압 1기" },
+  { value: "stage2", label: "고혈압 2기" },
+  { value: "na", label: "모름/해당없음(na)" },
 ];
 
 const KIDNEY_OPTIONS = [
   { value: "", label: "해당없음" },
-  { value: "CKD3~5", label: "CKD3~5" },
-  { value: "혈압투석", label: "혈압투석" },
-  { value: "복막투석", label: "복막투석" },
+  { value: "CKD_3_5", label: "CKD3~5" },
+  { value: "HD", label: "혈액투석" },
+  { value: "PD", label: "복막투석" },
+  { value: "na", label: "모름/해당없음(na)" },
 ];
 
 const ALLERGY_OPTIONS = [
-  "계란 (가금류)",
-  "우유",
-  "메밀",
-  "땅콩",
-  "대두 (콩)",
-  "밀",
-  "고등어",
-  "게",
-  "새우",
-  "돼지고기",
-  "복숭아",
-  "토마토",
-  "아황산류",
-  "호두",
-  "닭고기",
-  "소고기",
-  "오징어",
-  "조개류 (굴, 전복, 홍합 등 포함)",
-  "잣",
+  { value: "EGG", label: "계란 (가금류)" },
+  { value: "MILK", label: "우유" },
+  { value: "BUCKWHEAT", label: "메밀" },
+  { value: "PEANUT", label: "땅콩" },
+  { value: "SOYBEAN", label: "대두 (콩)" },
+  { value: "WHEAT", label: "밀" },
+  { value: "MACKEREL", label: "고등어" },
+  { value: "CRAB", label: "게" },
+  { value: "SHRIMP", label: "새우" },
+  { value: "PORK", label: "돼지고기" },
+  { value: "PEACH", label: "복숭아" },
+  { value: "TOMATO", label: "토마토" },
+  { value: "SULFITE", label: "아황산류" },
+  { value: "WALNUT", label: "호두" },
+  { value: "CHICKEN", label: "닭고기" },
+  { value: "BEEF", label: "소고기" },
+  { value: "SQUID", label: "오징어" },
+  { value: "OYSTER", label: "굴" },
+  { value: "ABALONE", label: "전복" },
+  { value: "MUSSEL", label: "홍합" },
+  { value: "PINE_NUT", label: "잣" },
+  { value: "SEASAME", label: "참깨" },
+  { value: "ALMOND", label: "아몬드" },
 ];
 
 function SignupForm() {
@@ -292,16 +301,16 @@ function SignupForm() {
                   <div className="grid grid-cols-2 gap-2">
                     {ALLERGY_OPTIONS.map((item) => (
                       <label
-                        key={item}
+                        key={item.value}
                         className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-primary transition-colors"
                       >
                         <input
                           type="checkbox"
-                          checked={allergy.includes(item)}
-                          onChange={() => toggleAllergy(item)}
+                          checked={allergy.includes(item.value)}
+                          onChange={() => toggleAllergy(item.value)}
                           className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
                         />
-                        <span className="truncate">{item}</span>
+                        <span className="truncate">{item.label}</span>
                       </label>
                     ))}
                   </div>
