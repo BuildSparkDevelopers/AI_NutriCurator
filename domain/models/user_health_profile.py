@@ -81,8 +81,8 @@ class UserHealthProfile(Base):
     # MVP에서는 저장->"매번 갱신"이면 나중에 분리하는 게 편할 듯 (예: activity_log 테이블 따로)
     average_of_steps: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    # 일단 String으로 두는 게 편함 (0, 1_2, 3_4, 5_7 등)
-    activity_level: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # 0단계, 1단계, 2단계, ... 5단계
+    activity_level: Mapped[int | None] = mapped_column(String(20), nullable=True)
 
     diabetes: Mapped[Diabetes | None] = mapped_column(Enum(Diabetes, name="diabetes"), nullable=True)
     hypertension: Mapped[Hypertension | None] = mapped_column(Enum(Hypertension, name="hypertension"), nullable=True)

@@ -21,9 +21,9 @@ class overallState(TypedDict):
     kidneydisease_flag: int
     allergy_flag: int
 
-    diabetes_detail: Literal["DIABETES"] | None #"TYPE_1", "TYPE_2", "GESTATIONAL"
-    hypertension_detail: Literal["HYPERTENSION"] | None #"STAGE_1", "STAGE_2"
-    kidney_detail: Literal["CKD_3_5", "HD", "PD"] | None
+    diabetes_detail: Literal["type1", "type2", "pre_type1", "pre_type2", "na"] #"TYPE_1", "TYPE_2", "GESTATIONAL"
+    hypertension_detail: Literal["prehypertension", "stage1", "stage2", "na"] #"STAGE_1", "STAGE_2"
+    kidney_detail: Literal["CKD_3_5", "HD", "PD", "na"]
     allergy_list: List[str]
     allergy_detail: List[str]
 
@@ -38,7 +38,7 @@ class overallState(TypedDict):
     substitute: List[str]      # 추천 대체 식재료 목록
 
     allergy_safety_summary: str
-    warniing : bool
+    warning : bool
     threshold_checked: bool
 
     # [흐름 제어]
@@ -48,27 +48,3 @@ class overallState(TypedDict):
     # [서브 레코 에이전트 용 정보]
     candidates: List[dict]
     sub_recommendations: List[dict]
-
-
-class KFDAAllergen(str, Enum):
-    """식약처 고시 알레르기 유발물질 22종"""
-    EGG = "난류(가금류)"
-    MILK = "우유"
-    BUCKWHEAT = "메밀"
-    PEANUT = "땅콩"
-    SOYBEAN = "대두"
-    WHEAT = "밀"
-    MACKEREL = "고등어"
-    CRAB = "게"
-    SHRIMP = "새우"
-    PORK = "돼지고기"
-    PEACH = "복숭아"
-    TOMATO = "토마토"
-    SULFITE = "아황산류"
-    WALNUT = "호두"
-    CHICKEN = "닭고기"
-    BEEF = "쇠고기"
-    SQUID = "오징어"
-    SHELLFISH = "조개류(굴, 전복, 홍합 포함)"
-    PINE_NUT = "잣"
-    # ... (나머지 포함 총 22종)
